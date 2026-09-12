@@ -568,9 +568,11 @@ function AuthScreen() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [busy, setBusy] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   async function submit() {
     setBusy(true)
+    setErrorMessage('')
 
     try {
       const normalized = normalizePhone(phone)
@@ -654,10 +656,9 @@ function AuthScreen() {
       setPassword('')
       setConfirmPassword('')
     } catch (error: any) {
-      Alert.alert(
-        'Atenção',
-        authErrorMessage(error)
-      )
+      const message = authErrorMessage(error)
+      setErrorMessage(message)
+      Alert.alert('Atenção', message)
     } finally {
       setBusy(false)
     }
@@ -727,6 +728,10 @@ function AuthScreen() {
             ? 'Entrar'
             : 'Criar conta'}
         </Text>
+
+        {errorMessage ? (
+          <Text style={styles.authError}>{errorMessage}</Text>
+        ) : null}
 
         {mode === 'signup' && (
           <>
@@ -5222,6 +5227,17 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: COLORS.text,
     marginBottom: 10,
+  },
+
+  authError: {
+    color: COLORS.danger,
+    backgroundColor: '#fff0f0',
+    borderWidth: 1,
+    borderColor: '#efbcbc',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+    lineHeight: 19,
   },
 
   sectionHeader: {
