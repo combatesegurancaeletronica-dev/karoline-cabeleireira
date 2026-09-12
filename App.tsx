@@ -1348,6 +1348,9 @@ function ManagerRequests() {
   const [pendingDelete, setPendingDelete] =
     useState<RequestRow | null>(null)
 
+  const [deleteError, setDeleteError] =
+    useState('')
+
   async function load() {
     setLoading(true)
 
@@ -1418,13 +1421,15 @@ function ManagerRequests() {
   async function removeRequest() {
     if (!pendingDelete) return
 
+    setDeleteError('')
+
     const { error } = await supabase
       .from('service_requests')
       .delete()
       .eq('id', pendingDelete.id)
 
     if (error) {
-      Alert.alert('Erro ao excluir solicitação', error.message)
+      setDeleteError(error.message)
     } else {
       setPendingDelete(null)
       load()
@@ -1583,9 +1588,10 @@ function ManagerRequests() {
               <Button
                 title="Excluir"
                 danger
-                onPress={() =>
+                onPress={() => {
+                  setDeleteError('')
                   setPendingDelete(row)
-                }
+                }}
               />
             </View>
           </Card>
@@ -1770,6 +1776,11 @@ function ManagerRequests() {
             <Text style={styles.modalText}>
               A solicitação de {pendingDelete?.client_name} será apagada definitivamente.
             </Text>
+            {deleteError ? (
+              <Text style={styles.authError}>
+                {deleteError}
+              </Text>
+            ) : null}
             <Button
               title="Excluir definitivamente"
               danger
@@ -1793,6 +1804,9 @@ function CrudClients() {
 
   const [pendingDelete, setPendingDelete] =
     useState<Client | null>(null)
+
+  const [deleteError, setDeleteError] =
+    useState('')
 
   const [name, setName] =
     useState('')
@@ -1902,13 +1916,15 @@ function CrudClients() {
   async function remove() {
     if (!pendingDelete) return
 
+    setDeleteError('')
+
     const { error } = await supabase
       .from('clients')
       .delete()
       .eq('id', pendingDelete.id)
 
     if (error) {
-      Alert.alert('Erro ao excluir cliente', error.message)
+      setDeleteError(error.message)
     } else {
       setPendingDelete(null)
       load()
@@ -2079,6 +2095,11 @@ function CrudClients() {
             <Text style={styles.modalText}>
               {pendingDelete?.full_name} será removido do cadastro.
             </Text>
+            {deleteError ? (
+              <Text style={styles.authError}>
+                {deleteError}
+              </Text>
+            ) : null}
             <Button
               title="Excluir definitivamente"
               danger
