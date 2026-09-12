@@ -1822,40 +1822,31 @@ function ManagerRequests() {
         </View>
       </Modal>
 
-      <Modal
-        transparent
-        visible={!!pendingDelete}
-        animationType="fade"
-        onRequestClose={() =>
-          setPendingDelete(null)
-        }
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            <Text style={styles.sectionTitle}>
-              Excluir solicitação?
+      {pendingDelete ? (
+        <Card>
+          <Text style={styles.sectionTitle}>
+            Excluir solicitação?
+          </Text>
+          <Text style={styles.modalText}>
+            A solicitação de {pendingDelete.client_name} será apagada definitivamente.
+          </Text>
+          {deleteError ? (
+            <Text style={styles.authError}>
+              {deleteError}
             </Text>
-            <Text style={styles.modalText}>
-              A solicitação de {pendingDelete?.client_name} será apagada definitivamente.
-            </Text>
-            {deleteError ? (
-              <Text style={styles.authError}>
-                {deleteError}
-              </Text>
-            ) : null}
-            <Button
-              title="Excluir definitivamente"
-              danger
-              onPress={removeRequest}
-            />
-            <Button
-              title="Cancelar"
-              secondary
-              onPress={() => setPendingDelete(null)}
-            />
-          </View>
-        </View>
-      </Modal>
+          ) : null}
+          <Button
+            title="Excluir definitivamente"
+            danger
+            onPress={removeRequest}
+          />
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() => setPendingDelete(null)}
+          />
+        </Card>
+      ) : null}
     </>
   )
 }
