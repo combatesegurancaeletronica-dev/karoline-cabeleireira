@@ -230,18 +230,31 @@ function playNotificationSound() {
     if (!AudioContextClass) return
 
     const context = new AudioContextClass()
-    const oscillator = context.createOscillator()
-    const gain = context.createGain()
-    oscillator.type = 'sine'
-    oscillator.frequency.value = 880
-    gain.gain.setValueAtTime(0.0001, context.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02)
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.45)
-    oscillator.connect(gain)
-    gain.connect(context.destination)
-    oscillator.start()
-    oscillator.stop(context.currentTime + 0.45)
-    oscillator.addEventListener('ended', () => context.close())
+    const start = context.currentTime
+    const tones = [
+      { frequency: 880, offset: 0 },
+      { frequency: 660, offset: 0.28 },
+      { frequency: 880, offset: 0.56 },
+      { frequency: 660, offset: 0.84 },
+    ]
+
+    for (const tone of tones) {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const toneStart = start + tone.offset
+      oscillator.type = 'square'
+      oscillator.frequency.value = tone.frequency
+      gain.gain.setValueAtTime(0.0001, toneStart)
+      gain.gain.exponentialRampToValueAtTime(0.45, toneStart + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, toneStart + 0.2)
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.start(toneStart)
+      oscillator.stop(toneStart + 0.2)
+    }
+
+    context.resume().catch(() => {})
+    setTimeout(() => context.close(), 1400)
   } catch {}
 }
 
@@ -255,6 +268,7 @@ function announceServiceRequest(clientName: string) {
   )
   utterance.lang = 'pt-BR'
   utterance.rate = 0.95
+  utterance.volume = 1
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(utterance)
 }
