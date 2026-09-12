@@ -2815,7 +2815,7 @@ function CrudNews() {
         <Field
           value={title}
           onChangeText={setTitle}
-          placeholder="Título da novidade"
+          placeholder="Título"
         />
 
         <View
@@ -2831,7 +2831,7 @@ function CrudNews() {
           <TextInput
             value={body}
             onChangeText={setBody}
-            placeholder="Texto da novidade"
+            placeholder="Texto"
             multiline
             numberOfLines={5}
             style={{
