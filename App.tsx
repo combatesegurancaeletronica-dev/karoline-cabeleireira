@@ -4349,14 +4349,9 @@ function ServiceRequest({
   >([])
 
   const [
-    selectedService,
-    setSelectedService,
-  ] = useState('')
-
-  const [
-    preferredDate,
-    setPreferredDate,
-  ] = useState('')
+    selectedServices,
+    setSelectedServices,
+  ] = useState<string[]>([])
 
   const [notes, setNotes] =
     useState('')
@@ -4371,6 +4366,18 @@ function ServiceRequest({
 
   const [loading, setLoading] =
     useState(true)
+
+  function toggleService(
+    serviceId: string
+  ) {
+    setSelectedServices((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter(
+            (id) => id !== serviceId
+          )
+        : [...prev, serviceId]
+    )
+  }
 
   async function load() {
     setLoading(true)
@@ -4401,9 +4408,11 @@ function ServiceRequest({
   }, [])
 
   async function send() {
-    if (!selectedService) {
+    if (
+      selectedServices.length === 0
+    ) {
       return Alert.alert(
-        'Selecione um serviço',
+        'Selecione pelo menos um serviço',
         'Os serviços ativos do gestor aparecem abaixo.'
       )
     }
@@ -4427,43 +4436,45 @@ function ServiceRequest({
       )
     }
 
-    const {
-      error,
-    } = await supabase
-      .from('service_requests')
-      .insert({
-        client_id:
-          client.id,
-        service_id:
-          selectedService,
-        preferred_date:
-          preferredDate.trim() ||
-          null,
-        notes:
-          notes.trim() ||
-          null,
-        voucher_code:
-          voucher
-            .trim()
-            .toUpperCase() ||
-          null,
-        status: 'new',
-      })
+    try {
+      const requestsToInsert =
+        selectedServices.map(
+          (serviceId) => ({
+            client_id: client.id,
+            service_id: serviceId,
+            notes:
+              notes.trim() || null,
+            voucher_code:
+              voucher
+                .trim()
+                .toUpperCase() ||
+              null,
+            status: 'new',
+          })
+        )
 
-    if (error) {
+      const { error } = await supabase
+        .from('service_requests')
+        .insert(requestsToInsert)
+
+      if (error) {
+        return Alert.alert(
+          'Erro',
+          error.message
+        )
+      }
+
+      setSelectedServices([])
+      setNotes('')
+      setVoucher('')
+      setModalVisible(true)
+    } catch (err: any) {
       Alert.alert(
         'Erro',
-        error.message
+        err.message ||
+          'Falha ao enviar solicitação'
       )
-
-      return
     }
-
-    setSelectedService('')
-    setPreferredDate('')
-    setNotes('')
-    setVoucher('')
-    setModalVisible(true)
   }
 
   return (
@@ -4494,24 +4505,31 @@ function ServiceRequest({
                 key={service.id}
                 style={[
                   styles.choice,
-                  selectedService ===
-                    service.id &&
+                  selectedServices.includes(
+                    service.id
+                  ) &&
                     styles.choiceSelected,
                 ]}
                 onPress={() =>
-                  setSelectedService(
+                  toggleService(
                     service.id
                   )
                 }
               >
                 <Text
                   style={
-                    selectedService ===
-                    service.id
+                    selectedServices.includes(
+                      service.id
+                    )
                       ? styles.choiceTextSelected
                       : styles.choiceText
                   }
                 >
+                  {selectedServices.includes(
+                    service.id
+                  )
+                    ? '✓ '
+                    : ''}
                   {service.name}
                 </Text>
               </Pressable>
@@ -4520,22 +4538,11 @@ function ServiceRequest({
         )}
 
         <Text style={styles.helperText}>
-          O preço não aparece para o
-          cliente. O gestor fará a
-          negociação.
+          Você pode selecionar mais de
+          um serviço. O preço não
+          aparece para o cliente. O
+          gestor fará a negociação.
         </Text>
-
-        <Text style={styles.label}>
-          Data desejada
-        </Text>
-
-        <Field
-          value={preferredDate}
-          onChangeText={
-            setPreferredDate
-          }
-          placeholder="Ex.: 20/09/2026"
-        />
 
         <Text style={styles.label}>
           Voucher
@@ -4551,11 +4558,28 @@ function ServiceRequest({
           Observação
         </Text>
 
-        <Field
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Ex.: quero mudar a cor dos cabelos"
-        />
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: '#ccc',
+            borderRadius: 6,
+            padding: 10,
+            marginVertical: 8,
+            minHeight: 120,
+          }}
+        >
+          <TextInput
+            value={notes}
+            onChangeText={setNotes}
+            placeholder="Ex.: quero mudar a cor dos cabelos"
+            multiline
+            numberOfLines={5}
+            style={{
+              fontSize: 16,
+              color: '#333',
+            }}
+          />
+        </View>
 
         <Button
           title="Enviar solicitação"
@@ -4584,8 +4608,9 @@ function ServiceRequest({
             <Text
               style={styles.modalText}
             >
-              Sua solicitação chegou ao
-              gestor. O valor e os
+              Sua(s) solicitação(ões)
+              chegou(chegaram) ao gestor.
+              A data, o valor e os
               detalhes serão negociados
               após o recebimento.
             </Text>
