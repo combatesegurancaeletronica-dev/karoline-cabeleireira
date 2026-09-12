@@ -1413,6 +1413,9 @@ function ManagerRequests() {
   const [deleteError, setDeleteError] =
     useState('')
 
+  const [actionError, setActionError] =
+    useState('')
+
   async function load() {
     setLoading(true)
 
@@ -1462,17 +1465,22 @@ function ManagerRequests() {
     id: string,
     status: string
   ) {
+    setActionError('')
+
     const {
+      data,
       error,
     } = await supabase
       .from('service_requests')
       .update({ status })
       .eq('id', id)
+      .select('id,status')
+      .maybeSingle()
 
-    if (error) {
-      Alert.alert(
-        'Erro',
-        error.message
+    if (error || !data) {
+      setActionError(
+        error?.message ||
+          'Nenhuma solicitação foi alterada. Verifique se o usuário está como gestor no Supabase.'
       )
     } else {
       setSelected(null)
@@ -1485,13 +1493,18 @@ function ManagerRequests() {
 
     setDeleteError('')
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('service_requests')
       .delete()
       .eq('id', pendingDelete.id)
+      .select('id')
+      .maybeSingle()
 
-    if (error) {
-      setDeleteError(error.message)
+    if (error || !data) {
+      setDeleteError(
+        error?.message ||
+          'A solicitação não foi excluída. Verifique a policy de DELETE para gestores no Supabase.'
+      )
     } else {
       setPendingDelete(null)
       load()
@@ -1615,36 +1628,46 @@ function ManagerRequests() {
               Status: {row.status}
             </Text>
 
+            {actionError ? (
+              <Text style={styles.authError}>
+                {actionError}
+              </Text>
+            ) : null}
+
             <View style={styles.rowWrap}>
               <Button
                 title="Abrir"
-                onPress={() =>
+                onPress={() => {
+                  setActionError('')
+                  setPendingDelete(null)
                   setSelected({
                     ...row,
                   })
-                }
+                }}
               />
 
               <Button
                 title="Negociar"
                 secondary
-                onPress={() =>
+                onPress={() => {
+                  setActionError('')
                   saveStatus(
                     row.id,
                     'negotiating'
                   )
-                }
+                }}
               />
 
               <Button
                 title="Recusar"
                 danger
-                onPress={() =>
+                onPress={() => {
+                  setActionError('')
                   saveStatus(
                     row.id,
                     'cancelled'
                   )
-                }
+                }}
               />
 
               <Button
