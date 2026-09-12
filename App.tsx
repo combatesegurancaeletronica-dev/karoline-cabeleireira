@@ -245,6 +245,20 @@ function playNotificationSound() {
   } catch {}
 }
 
+function announceServiceRequest(clientName: string) {
+  playNotificationSound()
+
+  if (typeof window === 'undefined' || !window.speechSynthesis) return
+
+  const utterance = new SpeechSynthesisUtterance(
+    `É uma solicitação de serviço da ${clientName}.`
+  )
+  utterance.lang = 'pt-BR'
+  utterance.rate = 0.95
+  window.speechSynthesis.cancel()
+  window.speechSynthesis.speak(utterance)
+}
+
 function Button({
   title,
   onPress,
@@ -1095,6 +1109,9 @@ function ManagerApp({
   const [notificationText, setNotificationText] =
     useState('')
 
+  const [audioEnabled, setAudioEnabled] =
+    useState(false)
+
   const logout = () => {
     supabase.auth.signOut()
   }
@@ -1103,23 +1120,40 @@ function ManagerApp({
     let timer: any
 
     let previousCount = 0
+    let previousRequestId = ''
+    let initialized = false
 
     const check = async () => {
-      const { count } = await supabase
-        .from('service_requests')
-        .select('*', {
-          count: 'exact',
-          head: true,
-        })
-        .eq('status', 'new')
+      const [{ count }, { data: latestRows }] = await Promise.all([
+        supabase
+          .from('service_requests')
+          .select('*', {
+            count: 'exact',
+            head: true,
+          })
+          .eq('status', 'new'),
+        supabase
+          .from('manager_service_requests')
+          .select('id,client_name,service_name,status,created_at')
+          .eq('status', 'new')
+          .order('created_at', { ascending: false })
+          .limit(1),
+      ])
 
       const nextCount = count || 0
+      const latestRequest = latestRows?.[0]
 
       setRequestCount(nextCount)
 
-      if (nextCount > previousCount) {
+      if (
+        initialized &&
+        latestRequest &&
+        (nextCount > previousCount ||
+          latestRequest.id !== previousRequestId)
+      ) {
+        const clientName = latestRequest.client_name || 'uma cliente'
         setNotificationText(
-          'Nova solicitação recebida. Toque aqui para abrir.'
+          `É uma solicitação de serviço da ${clientName}.`
         )
 
         try {
@@ -1131,15 +1165,12 @@ function ManagerApp({
           ])
         } catch {}
 
-        playNotificationSound()
-
-        Alert.alert(
-          'Nova solicitação de serviço',
-          'Uma cliente enviou uma nova solicitação. Abra Solicitações para ver o nome e o serviço.'
-        )
+        announceServiceRequest(clientName)
       }
 
       previousCount = nextCount
+      previousRequestId = latestRequest?.id || ''
+      initialized = true
     }
 
     check()
@@ -1166,6 +1197,23 @@ function ManagerApp({
             : undefined
         }
       />
+
+      {!audioEnabled ? (
+        <Pressable
+          style={styles.audioEnableBanner}
+          onPress={() => {
+            setAudioEnabled(true)
+            announceServiceRequest('teste de áudio')
+          }}
+        >
+          <Text style={styles.alertBannerTitle}>
+            🔊 Ativar alerta sonoro
+          </Text>
+          <Text style={styles.alertBannerText}>
+            Toque uma vez para ouvir o aviso quando chegar uma solicitação.
+          </Text>
+        </Pressable>
+      ) : null}
 
       {notificationText ? (
         <Pressable
@@ -5512,6 +5560,16 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     marginTop: 14,
+  },
+
+  audioEnableBanner: {
+    backgroundColor: '#fff8e8',
+    borderColor: '#e8c56d',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginHorizontal: 16,
+    marginTop: 12,
   },
 
   alertBannerTitle: {
