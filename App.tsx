@@ -4364,6 +4364,16 @@ function ServiceRequest({
     setModalVisible,
   ] = useState(false)
 
+  const [
+    sendingRequest,
+    setSendingRequest,
+  ] = useState(false)
+
+  const [
+    sendError,
+    setSendError,
+  ] = useState('')
+
   const [loading, setLoading] =
     useState(true)
 
@@ -4411,32 +4421,37 @@ function ServiceRequest({
     if (
       selectedServices.length === 0
     ) {
-      return Alert.alert(
-        'Selecione pelo menos um serviço',
-        'Os serviços ativos do gestor aparecem abaixo.'
+      setSendError(
+        'Selecione pelo menos um serviço'
       )
+      return
     }
 
-    const {
-      data: client,
-      error: clientError,
-    } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('user_id', profile.id)
-      .single()
-
-    if (
-      clientError ||
-      !client
-    ) {
-      return Alert.alert(
-        'Erro',
-        'Não encontramos o cadastro de cliente vinculado à sua conta.'
-      )
-    }
+    setSendingRequest(true)
+    setSendError('')
 
     try {
+      const {
+        data: client,
+        error: clientError,
+      } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', profile.id)
+        .single()
+
+      if (
+        clientError ||
+        !client
+      ) {
+        setSendError(
+          clientError?.message ||
+            'Não encontramos o cadastro de cliente vinculado à sua conta.'
+        )
+        setSendingRequest(false)
+        return
+      }
+
       const requestsToInsert =
         selectedServices.map(
           (serviceId) => ({
@@ -4458,22 +4473,26 @@ function ServiceRequest({
         .insert(requestsToInsert)
 
       if (error) {
-        return Alert.alert(
-          'Erro',
-          error.message
+        setSendError(
+          error.message ||
+            'Falha ao enviar solicitação. Verifique sua conexão.'
         )
+        setSendingRequest(false)
+        return
       }
 
       setSelectedServices([])
       setNotes('')
       setVoucher('')
+      setSendError('')
+      setSendingRequest(false)
       setModalVisible(true)
     } catch (err: any) {
-      Alert.alert(
-        'Erro',
+      setSendError(
         err.message ||
-          'Falha ao enviar solicitação'
+          'Erro inesperado ao enviar solicitação'
       )
+      setSendingRequest(false)
     }
   }
 
@@ -4581,10 +4600,44 @@ function ServiceRequest({
           />
         </View>
 
-        <Button
-          title="Enviar solicitação"
-          onPress={send}
-        />
+        {sendError ? (
+          <Text
+            style={
+              styles.authError
+            }
+          >
+            {sendError}
+          </Text>
+        ) : null}
+
+        {sendingRequest ? (
+          <View
+            style={{
+              flexDirection:
+                'row',
+              alignItems:
+                'center',
+              justifyContent:
+                'center',
+              paddingVertical: 12,
+            }}
+          >
+            <ActivityIndicator
+              color={COLORS.primary}
+              style={{
+                marginRight: 8,
+              }}
+            />
+            <Text>
+              Enviando solicitação...
+            </Text>
+          </View>
+        ) : (
+          <Button
+            title="Enviar solicitação"
+            onPress={send}
+          />
+        )}
       </Card>
 
       <Modal
