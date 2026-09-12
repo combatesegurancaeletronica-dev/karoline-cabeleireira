@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -218,6 +218,31 @@ function authErrorMessage(error: any) {
   }
 
   return message || 'Não foi possível continuar.'
+}
+
+function playNotificationSound() {
+  if (typeof window === 'undefined') return
+
+  try {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioContextClass) return
+
+    const context = new AudioContextClass()
+    const oscillator = context.createOscillator()
+    const gain = context.createGain()
+    oscillator.type = 'sine'
+    oscillator.frequency.value = 880
+    gain.gain.setValueAtTime(0.0001, context.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.45)
+    oscillator.connect(gain)
+    gain.connect(context.destination)
+    oscillator.start()
+    oscillator.stop(context.currentTime + 0.45)
+    oscillator.addEventListener('ended', () => context.close())
+  } catch {}
 }
 
 function Button({
@@ -1067,6 +1092,9 @@ function ManagerApp({
   const [requestCount, setRequestCount] =
     useState(0)
 
+  const [notificationText, setNotificationText] =
+    useState('')
+
   const logout = () => {
     supabase.auth.signOut()
   }
@@ -1090,6 +1118,10 @@ function ManagerApp({
       setRequestCount(nextCount)
 
       if (nextCount > previousCount) {
+        setNotificationText(
+          'Nova solicitação recebida. Toque aqui para abrir.'
+        )
+
         try {
           Vibration.vibrate([
             0,
@@ -1098,6 +1130,8 @@ function ManagerApp({
             300,
           ])
         } catch {}
+
+        playNotificationSound()
 
         Alert.alert(
           'Nova solicitação de serviço',
@@ -1132,6 +1166,23 @@ function ManagerApp({
             : undefined
         }
       />
+
+      {notificationText ? (
+        <Pressable
+          style={styles.alertBanner}
+          onPress={() => {
+            setNotificationText('')
+            setTab('requests')
+          }}
+        >
+          <Text style={styles.alertBannerTitle}>
+            🔔 Nova solicitação
+          </Text>
+          <Text style={styles.alertBannerText}>
+            {notificationText}
+          </Text>
+        </Pressable>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -1683,6 +1734,9 @@ function CrudClients() {
   const [rows, setRows] =
     useState<Client[]>([])
 
+  const [pendingDelete, setPendingDelete] =
+    useState<Client | null>(null)
+
   const [name, setName] =
     useState('')
 
@@ -1788,37 +1842,20 @@ function CrudClients() {
     }
   }
 
-  async function remove(id: string) {
-    Alert.alert(
-      'Excluir cliente',
-      'Deseja realmente excluir?',
-      [
-        {
-          text: 'Cancelar',
-        },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            const {
-              error,
-            } = await supabase
-              .from('clients')
-              .delete()
-              .eq('id', id)
+  async function remove() {
+    if (!pendingDelete) return
 
-            if (error) {
-              Alert.alert(
-                'Erro',
-                error.message
-              )
-            } else {
-              load()
-            }
-          },
-        },
-      ]
-    )
+    const { error } = await supabase
+      .from('clients')
+      .delete()
+      .eq('id', pendingDelete.id)
+
+    if (error) {
+      Alert.alert('Erro ao excluir cliente', error.message)
+    } else {
+      setPendingDelete(null)
+      load()
+    }
   }
 
   return (
@@ -1882,7 +1919,7 @@ function CrudClients() {
               title="Excluir"
               danger
               onPress={() =>
-                remove(row.id)
+                setPendingDelete(row)
               }
             />
           </View>
@@ -1965,6 +2002,36 @@ function CrudClients() {
                 />
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={!!pendingDelete}
+        animationType="fade"
+        onRequestClose={() =>
+          setPendingDelete(null)
+        }
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <Text style={styles.sectionTitle}>
+              Excluir cliente?
+            </Text>
+            <Text style={styles.modalText}>
+              {pendingDelete?.full_name} será removido do cadastro.
+            </Text>
+            <Button
+              title="Excluir definitivamente"
+              danger
+              onPress={remove}
+            />
+            <Button
+              title="Cancelar"
+              secondary
+              onPress={() => setPendingDelete(null)}
+            />
           </View>
         </View>
       </Modal>
