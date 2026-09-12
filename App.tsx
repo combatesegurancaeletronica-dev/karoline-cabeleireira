@@ -3721,6 +3721,9 @@ function ManagerLoyaltyCloud() {
   const [editing, setEditing] =
     useState<any | null>(null)
 
+  const [pendingDeleteReward, setPendingDeleteReward] =
+    useState<any | null>(null)
+
   const [name, setName] =
     useState('')
 
@@ -3946,41 +3949,27 @@ function ManagerLoyaltyCloud() {
   async function remove(
     item: any
   ) {
-    Alert.alert(
-      'Excluir recompensa',
-      `Excluir ${item.name}?`,
-      [
-        {
-          text: 'Cancelar',
-        },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            const {
-              error,
-            } = await supabase
-              .from(
-                'loyalty_rewards'
-              )
-              .delete()
-              .eq(
-                'id',
-                item.id
-              )
+    const {
+      error,
+    } = await supabase
+      .from(
+        'loyalty_rewards'
+      )
+      .delete()
+      .eq(
+        'id',
+        item.id
+      )
 
-            if (error) {
-              Alert.alert(
-                'Erro',
-                error.message
-              )
-            } else {
-              load()
-            }
-          },
-        },
-      ]
-    )
+    if (error) {
+      Alert.alert(
+        'Erro',
+        error.message
+      )
+    } else {
+      setPendingDeleteReward(null)
+      load()
+    }
   }
 
   async function toggleProgram() {
@@ -4166,12 +4155,37 @@ function ManagerLoyaltyCloud() {
               title="Excluir"
               danger
               onPress={() =>
-                remove(item)
+                setPendingDeleteReward(item)
               }
             />
           </View>
         </Card>
       ))}
+
+      {pendingDeleteReward ? (
+        <Card>
+          <Text style={styles.sectionTitle}>
+            Excluir recompensa?
+          </Text>
+          <Text style={styles.modalText}>
+            A recompensa "{pendingDeleteReward.name}" será deletada permanentemente.
+          </Text>
+          <Button
+            title="Excluir definitivamente"
+            danger
+            onPress={() =>
+              remove(pendingDeleteReward)
+            }
+          />
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() =>
+              setPendingDeleteReward(null)
+            }
+          />
+        </Card>
+      ) : null}
     </>
   )
 }
