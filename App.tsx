@@ -1410,6 +1410,9 @@ function ManagerRequests() {
   const [pendingDelete, setPendingDelete] =
     useState<RequestRow | null>(null)
 
+  const [recusarPendente, setRecusarPendente] =
+    useState<RequestRow | null>(null)
+
   const [deleteError, setDeleteError] =
     useState('')
 
@@ -1492,15 +1495,15 @@ function ManagerRequests() {
     if (!pendingDelete) return
 
     setDeleteError('')
+    setActionError('')
 
     const { data, error } = await supabase
       .from('service_requests')
       .delete()
       .eq('id', pendingDelete.id)
       .select('id')
-      .maybeSingle()
 
-    if (error || !data) {
+    if (error || !data || data.length === 0) {
       setDeleteError(
         error?.message ||
           'A solicitação não foi excluída. Verifique a policy de DELETE para gestores no Supabase.'
@@ -1651,10 +1654,9 @@ function ManagerRequests() {
                 secondary
                 onPress={() => {
                   setActionError('')
-                  saveStatus(
-                    row.id,
-                    'negotiating'
-                  )
+                  setSelected({
+                    ...row,
+                  })
                 }}
               />
 
@@ -1663,10 +1665,7 @@ function ManagerRequests() {
                 danger
                 onPress={() => {
                   setActionError('')
-                  saveStatus(
-                    row.id,
-                    'cancelled'
-                  )
+                  setRecusarPendente(row)
                 }}
               />
 
@@ -1867,6 +1866,34 @@ function ManagerRequests() {
             title="Cancelar"
             secondary
             onPress={() => setPendingDelete(null)}
+          />
+        </Card>
+      ) : null}
+
+      {recusarPendente ? (
+        <Card>
+          <Text style={styles.sectionTitle}>
+            Recusar solicitação?
+          </Text>
+          <Text style={styles.modalText}>
+            A solicitação de {recusarPendente.client_name} será marcada como cancelada.
+          </Text>
+          <Button
+            title="Confirmar recusa"
+            danger
+            onPress={() => {
+              setActionError('')
+              saveStatus(
+                recusarPendente.id,
+                'cancelled'
+              )
+              setRecusarPendente(null)
+            }}
+          />
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() => setRecusarPendente(null)}
           />
         </Card>
       ) : null}
