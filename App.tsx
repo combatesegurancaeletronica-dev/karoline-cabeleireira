@@ -2102,120 +2102,98 @@ function CrudClients() {
         </Card>
       ))}
 
-      <Modal
-        transparent
-        visible={!!editing}
-        animationType="slide"
-        onRequestClose={() =>
-          setEditing(null)
-        }
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            {editing && (
-              <>
-                <Text
-                  style={
-                    styles.sectionTitle
-                  }
-                >
-                  Editar cliente
-                </Text>
+      {editing ? (
+        <Card>
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Editar cliente
+          </Text>
 
-                <Field
-                  value={
-                    editing.full_name
-                  }
-                  onChangeText={(v) =>
-                    setEditing({
-                      ...editing,
-                      full_name: v,
-                    })
-                  }
-                  placeholder="Nome completo"
-                />
+          <Field
+            value={
+              editing.full_name
+            }
+            onChangeText={(v) =>
+              setEditing({
+                ...editing,
+                full_name: v,
+              })
+            }
+            placeholder="Nome completo"
+          />
 
-                <PhoneField
-                  value={
-                    editing.phone
-                  }
-                  onChangeText={(v) =>
-                    setEditing({
-                      ...editing,
-                      phone: v,
-                    })
-                  }
-                  placeholder="Celular"
-                />
+          <PhoneField
+            value={
+              editing.phone
+            }
+            onChangeText={(v) =>
+              setEditing({
+                ...editing,
+                phone: v,
+              })
+            }
+            placeholder="Celular"
+          />
 
-                <Button
-                  title="Salvar"
-                  onPress={saveEdit}
-                />
+          <Button
+            title="Salvar"
+            onPress={saveEdit}
+          />
 
-                <Button
-                  title={
-                    editing.active
-                      ? 'Desativar'
-                      : 'Ativar'
-                  }
-                  secondary
-                  onPress={() =>
-                    setEditing({
-                      ...editing,
-                      active:
-                        !editing.active,
-                    })
-                  }
-                />
+          <Button
+            title={
+              editing.active
+                ? 'Desativar'
+                : 'Ativar'
+            }
+            secondary
+            onPress={() =>
+              setEditing({
+                ...editing,
+                active:
+                  !editing.active,
+              })
+            }
+          />
 
-                <Button
-                  title="Cancelar"
-                  secondary
-                  onPress={() =>
-                    setEditing(null)
-                  }
-                />
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() =>
+              setEditing(null)
+            }
+          />
+        </Card>
+      ) : null}
 
-      <Modal
-        transparent
-        visible={!!pendingDelete}
-        animationType="fade"
-        onRequestClose={() =>
-          setPendingDelete(null)
-        }
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            <Text style={styles.sectionTitle}>
-              Excluir cliente?
+      {pendingDelete ? (
+        <Card>
+          <Text style={styles.sectionTitle}>
+            Excluir cliente?
+          </Text>
+          <Text style={styles.modalText}>
+            {pendingDelete?.full_name} será removido do cadastro.
+          </Text>
+          {deleteError ? (
+            <Text style={styles.authError}>
+              {deleteError}
             </Text>
-            <Text style={styles.modalText}>
-              {pendingDelete?.full_name} será removido do cadastro.
-            </Text>
-            {deleteError ? (
-              <Text style={styles.authError}>
-                {deleteError}
-              </Text>
-            ) : null}
-            <Button
-              title="Excluir definitivamente"
-              danger
-              onPress={remove}
-            />
-            <Button
-              title="Cancelar"
-              secondary
-              onPress={() => setPendingDelete(null)}
-            />
-          </View>
-        </View>
-      </Modal>
+          ) : null}
+          <Button
+            title="Excluir definitivamente"
+            danger
+            onPress={remove}
+          />
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() => setPendingDelete(null)}
+          />
+        </Card>
+      ) : null}
     </>
   )
 }
@@ -2399,83 +2377,70 @@ function CrudProfessionals() {
         </Card>
       ))}
 
-      <Modal
-        transparent
-        visible={!!editing}
-        animationType="slide"
-        onRequestClose={() =>
-          setEditing(null)
-        }
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            {editing && (
-              <>
-                <Text
-                  style={
-                    styles.sectionTitle
-                  }
-                >
-                  Editar profissional
-                </Text>
+      {editing ? (
+        <Card>
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Editar profissional
+          </Text>
 
-                <Field
-                  value={editing.name}
-                  onChangeText={(v) =>
-                    setEditing({
-                      ...editing,
-                      name: v,
-                    })
-                  }
-                  placeholder="Nome"
-                />
+          <Field
+            value={editing.name}
+            onChangeText={(v) =>
+              setEditing({
+                ...editing,
+                name: v,
+              })
+            }
+            placeholder="Nome"
+          />
 
-                <Field
-                  value={
-                    editing.specialty
-                  }
-                  onChangeText={(v) =>
-                    setEditing({
-                      ...editing,
-                      specialty: v,
-                    })
-                  }
-                  placeholder="Especialidade"
-                />
+          <Field
+            value={
+              editing.specialty
+            }
+            onChangeText={(v) =>
+              setEditing({
+                ...editing,
+                specialty: v,
+              })
+            }
+            placeholder="Especialidade"
+          />
 
-                <Button
-                  title="Salvar"
-                  onPress={saveEdit}
-                />
+          <Button
+            title="Salvar"
+            onPress={saveEdit}
+          />
 
-                <Button
-                  title={
-                    editing.active
-                      ? 'Desativar'
-                      : 'Ativar'
-                  }
-                  secondary
-                  onPress={() =>
-                    setEditing({
-                      ...editing,
-                      active:
-                        !editing.active,
-                    })
-                  }
-                />
+          <Button
+            title={
+              editing.active
+                ? 'Desativar'
+                : 'Ativar'
+            }
+            secondary
+            onPress={() =>
+              setEditing({
+                ...editing,
+                active:
+                  !editing.active,
+              })
+            }
+          />
 
-                <Button
-                  title="Cancelar"
-                  secondary
-                  onPress={() =>
-                    setEditing(null)
-                  }
-                />
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() =>
+              setEditing(null)
+            }
+          />
+        </Card>
+      ) : null}
     </>
   )
 }
@@ -2675,90 +2640,77 @@ function CrudServices() {
         </Card>
       ))}
 
-      <Modal
-        transparent
-        visible={!!editing}
-        animationType="slide"
-        onRequestClose={() =>
-          setEditing(null)
-        }
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalBox}>
-            {editing && (
-              <>
-                <Text
-                  style={
-                    styles.sectionTitle
-                  }
-                >
-                  Editar serviço
-                </Text>
+      {editing ? (
+        <Card>
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Editar serviço
+          </Text>
 
-                <Field
-                  value={editing.name}
-                  onChangeText={(v) =>
-                    setEditing({
-                      ...editing,
-                      name: v,
-                    })
-                  }
-                  placeholder="Nome"
-                />
+          <Field
+            value={editing.name}
+            onChangeText={(v) =>
+              setEditing({
+                ...editing,
+                name: v,
+              })
+            }
+            placeholder="Nome"
+          />
 
-                <Field
-                  value={String(
-                    editing.price
-                  )}
-                  onChangeText={(v) =>
-                    setEditing({
-                      ...editing,
-                      price:
-                        Number(
-                          v.replace(
-                            ',',
-                            '.'
-                          )
-                        ) || 0,
-                    })
-                  }
-                  placeholder="Valor"
-                  keyboardType="decimal-pad"
-                />
-
-                <Button
-                  title="Salvar"
-                  onPress={saveEdit}
-                />
-
-                <Button
-                  title={
-                    editing.active
-                      ? 'Desativar'
-                      : 'Ativar'
-                  }
-                  secondary
-                  onPress={() =>
-                    setEditing({
-                      ...editing,
-                      active:
-                        !editing.active,
-                    })
-                  }
-                />
-
-                <Button
-                  title="Cancelar"
-                  secondary
-                  onPress={() =>
-                    setEditing(null)
-                  }
-                />
-              </>
+          <Field
+            value={String(
+              editing.price
             )}
-          </View>
-        </View>
-      </Modal>
+            onChangeText={(v) =>
+              setEditing({
+                ...editing,
+                price:
+                  Number(
+                    v.replace(
+                      ',',
+                      '.'
+                    )
+                  ) || 0,
+              })
+            }
+            placeholder="Valor"
+            keyboardType="decimal-pad"
+          />
+
+          <Button
+            title="Salvar"
+            onPress={saveEdit}
+          />
+
+          <Button
+            title={
+              editing.active
+                ? 'Desativar'
+                : 'Ativar'
+            }
+            secondary
+            onPress={() =>
+              setEditing({
+                ...editing,
+                active:
+                  !editing.active,
+              })
+            }
+          />
+
+          <Button
+            title="Cancelar"
+            secondary
+            onPress={() =>
+              setEditing(null)
+            }
+          />
+        </Card>
+      ) : null}
     </>
   )
 }
@@ -2866,11 +2818,28 @@ function CrudNews() {
           placeholder="Título da novidade"
         />
 
-        <Field
-          value={body}
-          onChangeText={setBody}
-          placeholder="Texto da novidade"
-        />
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: '#ccc',
+            borderRadius: 6,
+            padding: 10,
+            marginVertical: 8,
+            minHeight: 120,
+          }}
+        >
+          <TextInput
+            value={body}
+            onChangeText={setBody}
+            placeholder="Texto da novidade"
+            multiline
+            numberOfLines={5}
+            style={{
+              fontSize: 16,
+              color: '#333',
+            }}
+          />
+        </View>
 
         <Button
           title="Publicar novidade"
