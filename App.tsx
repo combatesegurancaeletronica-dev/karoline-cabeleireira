@@ -1345,6 +1345,9 @@ function ManagerRequests() {
   const [selected, setSelected] =
     useState<RequestRow | null>(null)
 
+  const [pendingDelete, setPendingDelete] =
+    useState<RequestRow | null>(null)
+
   async function load() {
     setLoading(true)
 
@@ -1408,6 +1411,22 @@ function ManagerRequests() {
       )
     } else {
       setSelected(null)
+      load()
+    }
+  }
+
+  async function removeRequest() {
+    if (!pendingDelete) return
+
+    const { error } = await supabase
+      .from('service_requests')
+      .delete()
+      .eq('id', pendingDelete.id)
+
+    if (error) {
+      Alert.alert('Erro ao excluir solicitação', error.message)
+    } else {
+      setPendingDelete(null)
       load()
     }
   }
@@ -1558,6 +1577,14 @@ function ManagerRequests() {
                     row.id,
                     'cancelled'
                   )
+                }
+              />
+
+              <Button
+                title="Excluir"
+                danger
+                onPress={() =>
+                  setPendingDelete(row)
                 }
               />
             </View>
@@ -1724,6 +1751,36 @@ function ManagerRequests() {
               )}
             </Card>
           </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={!!pendingDelete}
+        animationType="fade"
+        onRequestClose={() =>
+          setPendingDelete(null)
+        }
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalBox}>
+            <Text style={styles.sectionTitle}>
+              Excluir solicitação?
+            </Text>
+            <Text style={styles.modalText}>
+              A solicitação de {pendingDelete?.client_name} será apagada definitivamente.
+            </Text>
+            <Button
+              title="Excluir definitivamente"
+              danger
+              onPress={removeRequest}
+            />
+            <Button
+              title="Cancelar"
+              secondary
+              onPress={() => setPendingDelete(null)}
+            />
+          </View>
         </View>
       </Modal>
     </>
