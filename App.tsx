@@ -4583,6 +4583,8 @@ function ServiceRequest({
     setSendError('')
 
     try {
+      await ensureClientAccount()
+
       const { error } = await supabase.rpc(
         'create_service_requests',
         {
@@ -4595,7 +4597,9 @@ function ServiceRequest({
 
       if (error) {
         setSendError(
-          error.message ||
+          error.code === 'PGRST202'
+            ? 'Atualize o schema.sql no Supabase para ativar o envio de solicitações.'
+            : error.message ||
             'Falha ao enviar solicitação. Verifique sua conexão.'
         )
         setSendingRequest(false)
