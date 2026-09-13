@@ -436,9 +436,9 @@ function Card({ children }: { children: React.ReactNode }) {
 
 class ServiceRequestErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean; errorMessage: string; retryKey: number }
+  { hasError: boolean; errorMessage: string }
 > {
-  state = { hasError: false, errorMessage: '', retryKey: 0 }
+  state = { hasError: false, errorMessage: '' }
 
   static getDerivedStateFromError(error: Error) {
     return {
@@ -467,18 +467,17 @@ class ServiceRequestErrorBoundary extends React.Component<
           <Button
             title="Tentar novamente"
             onPress={() =>
-              this.setState((state) => ({
+              this.setState({
                 hasError: false,
                 errorMessage: '',
-                retryKey: state.retryKey + 1,
-              }))
+              })
             }
           />
         </Card>
       )
     }
 
-    return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>
+    return this.props.children
   }
 }
 
