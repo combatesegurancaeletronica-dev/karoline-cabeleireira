@@ -4409,6 +4409,21 @@ function ClientApp({
   const [tab, setTab] =
     useState<Tab>('home')
 
+  const content =
+    tab === 'home' ? (
+      <ClientHome profile={profile} setTab={setTab} />
+    ) : tab === 'request' ? (
+      <ServiceRequestErrorBoundary>
+        <ServiceRequest profile={profile} />
+      </ServiceRequestErrorBoundary>
+    ) : tab === 'schedule' ? (
+      <ClientSchedule profile={profile} />
+    ) : tab === 'news' ? (
+      <ClientNews />
+    ) : (
+      <ClientLoyalty profile={profile} />
+    )
+
   const logout = () =>
     supabase.auth.signOut()
 
@@ -4430,34 +4445,7 @@ function ClientApp({
       <ScrollView
         contentContainerStyle={styles.container}
       >
-        {tab === 'home' && (
-          <ClientHome
-            profile={profile}
-            setTab={setTab}
-          />
-        )}
-
-        {tab === 'request' && (
-          <ServiceRequestErrorBoundary>
-            <ServiceRequest profile={profile} />
-          </ServiceRequestErrorBoundary>
-        )}
-
-        {tab === 'schedule' && (
-          <ClientSchedule
-            profile={profile}
-          />
-        )}
-
-        {tab === 'news' && (
-          <ClientNews />
-        )}
-
-        {tab === 'loyalty' && (
-          <ClientLoyalty
-            profile={profile}
-          />
-        )}
+        {content}
       </ScrollView>
 
       <BottomNav
@@ -4734,11 +4722,9 @@ function ServiceRequest({
                       : styles.choiceText
                   }
                 >
-                  {selectedServices.includes(
-                    service.id
-                  )
+                  {selectedServices.includes(service.id)
                     ? '✓ '
-                    : ''}
+                    : '○ '}
                   {service.name}
                 </Text>
               </Pressable>
