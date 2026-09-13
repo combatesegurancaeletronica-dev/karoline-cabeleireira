@@ -3105,11 +3105,6 @@ function CashManager() {
   const [services, setServices] =
     useState<Service[]>([])
 
-  const [kind, setKind] =
-    useState<'income' | 'expense'>(
-      'income'
-    )
-
   const [description, setDescription] =
     useState('')
 
@@ -3325,10 +3320,7 @@ function CashManager() {
       )
     }
 
-    if (
-      kind === 'income' &&
-      !clientId
-    ) {
+    if (!clientId) {
       return Alert.alert(
         'Atenção',
         'Selecione o cliente atendido.'
@@ -3340,15 +3332,13 @@ function CashManager() {
      * pelo projeto.
      */
     const payload: any = {
-      kind,
+      kind: 'income',
       description:
         description.trim() ||
           (serviceId
             ? `Serviço adicional: ${services.find(
                 (service) => service.id === serviceId
               )?.name || 'Serviço'}`
-            : kind === 'expense'
-            ? 'Saída do caixa'
             : 'Lançamento de atendimento'),
       amount: value,
       client_id:
@@ -3446,74 +3436,28 @@ function CashManager() {
           Novo lançamento
         </Text>
 
-        <View style={styles.kindRow}>
+        <Text style={styles.label}>
+          Cliente atendido
+        </Text>
+
+        {clients.map((client) => (
           <Pressable
-            onPress={() =>
-              setKind('income')
-            }
+            key={client.id}
+            onPress={() => setClientId(client.id)}
             style={[
-              styles.kindPill,
-              kind === 'income' &&
-                styles.kindPillSelected,
+              styles.choice,
+              clientId === client.id && styles.choiceSelected,
             ]}
           >
-            <Text>Entrada</Text>
+            <Text>{client.full_name}</Text>
           </Pressable>
+        ))}
 
-          <Pressable
-            onPress={() =>
-              setKind('expense')
-            }
-            style={[
-              styles.kindPill,
-              kind === 'expense' &&
-                styles.kindPillSelected,
-            ]}
-          >
-            <Text>Saída</Text>
-          </Pressable>
-        </View>
+        <Text style={styles.label}>
+          Serviço adicional (opcional)
+        </Text>
 
-        {kind === 'income' ? (
-          <>
-            <Text style={styles.label}>
-              Cliente atendido
-            </Text>
-
-            {clients.map(
-              (client) => (
-                <Pressable
-                  key={client.id}
-                  onPress={() =>
-                    setClientId(
-                      client.id
-                    )
-                  }
-                  style={[
-                    styles.choice,
-                    clientId ===
-                      client.id &&
-                      styles.choiceSelected,
-                  ]}
-                >
-                  <Text>
-                    {
-                      client.full_name
-                    }
-                  </Text>
-                </Pressable>
-              )
-            )}
-          </>
-        ) : null}
-
-        {kind === 'income' ? (
-          <>
-            <Text style={styles.label}>
-              Serviço adicional (opcional)
-            </Text>
-
-            {services.filter((service) => service.active).map((service) => (
+        {services.filter((service) => service.active).map((service) => (
               <Pressable
                 key={service.id}
                 onPress={() => {
@@ -3531,9 +3475,7 @@ function CashManager() {
                   {service.name} ({formatMoney(service.price)})
                 </Text>
               </Pressable>
-            ))}
-          </>
-        ) : null}
+        ))}
 
         <Field
           value={description}
