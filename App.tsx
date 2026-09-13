@@ -1750,6 +1750,13 @@ function ManagerRequests() {
                 'A combinar'}
             </Text>
 
+            {row.scheduled_at ? (
+              <Text style={styles.confirmedSchedule}>
+                Agendamento confirmado:{' '}
+                {formatDateTime(row.scheduled_at)}
+              </Text>
+            ) : null}
+
             {row.negotiated_price != null && (
               <Text style={styles.price}>
                 Negociado:{' '}
@@ -5015,6 +5022,19 @@ function ClientSchedule({
               Status: {r.status}
             </Text>
 
+            {r.preferred_date ? (
+              <Text>
+                Data desejada: {r.preferred_date}
+              </Text>
+            ) : null}
+
+            {r.scheduled_at ? (
+              <Text style={styles.confirmedSchedule}>
+                Agendamento confirmado:{' '}
+                {formatDateTime(r.scheduled_at)}
+              </Text>
+            ) : null}
+
             {r.professional_name ? (
               <Text>
                 Profissional:{' '}
@@ -5840,6 +5860,12 @@ const styles = StyleSheet.create({
     marginTop: 7,
     fontWeight: '800',
     color: COLORS.primaryDark,
+  },
+
+  confirmedSchedule: {
+    marginTop: 6,
+    color: COLORS.success,
+    fontWeight: '800',
   },
 
   rowWrap: {
