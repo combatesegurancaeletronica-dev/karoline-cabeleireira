@@ -4449,25 +4449,29 @@ function ServiceRequest({
   async function load() {
     setLoading(true)
 
-    const {
-      data,
-      error,
-    } = await supabase
-      .from('client_services')
-      .select(
-        'id,name,active'
-      )
-      .order('name')
+    try {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from('services')
+        .select('id,name,active')
+        .eq('active', true)
+        .order('name')
 
-    if (error) {
+      if (error) throw error
+
+      setServices(data || [])
+    } catch (error: any) {
+      setServices([])
       Alert.alert(
-        'Erro',
-        error.message
+        'Erro ao carregar serviços',
+        error?.message ||
+          'Não foi possível carregar os serviços.'
       )
+    } finally {
+      setLoading(false)
     }
-
-    setServices(data || [])
-    setLoading(false)
   }
 
   useEffect(() => {
