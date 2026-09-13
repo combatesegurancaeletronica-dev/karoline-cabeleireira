@@ -442,6 +442,26 @@ for each row
 execute procedure public.handle_new_user();
 
 
+insert into public.clients (
+    user_id,
+    full_name,
+    phone,
+    active
+)
+select
+    p.id,
+    p.full_name,
+    coalesce(p.phone, ''),
+    true
+from public.profiles p
+where p.role = 'client'
+  and not exists (
+      select 1
+      from public.clients c
+      where c.user_id = p.id
+  );
+
+
 alter table public.profiles enable row level security;
 alter table public.clients enable row level security;
 alter table public.professionals enable row level security;
