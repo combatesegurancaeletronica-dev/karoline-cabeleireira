@@ -398,6 +398,38 @@ function Card({ children }: { children: React.ReactNode }) {
   return <View style={styles.card}>{children}</View>
 }
 
+class ServiceRequestErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card>
+          <Text style={styles.sectionTitle}>
+            Não foi possível abrir a solicitação
+          </Text>
+          <Text style={styles.muted}>
+            Tente novamente para continuar no aplicativo.
+          </Text>
+          <Button
+            title="Tentar novamente"
+            onPress={() => this.setState({ hasError: false })}
+          />
+        </Card>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 function SectionTitle({
   children,
   subtitle,
@@ -4274,9 +4306,9 @@ function ClientApp({
         )}
 
         {tab === 'request' && (
-          <ServiceRequest
-            profile={profile}
-          />
+          <ServiceRequestErrorBoundary>
+            <ServiceRequest profile={profile} />
+          </ServiceRequestErrorBoundary>
         )}
 
         {tab === 'schedule' && (
