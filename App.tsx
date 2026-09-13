@@ -1713,6 +1713,18 @@ function ManagerRequests() {
     setDeleteError('')
     setActionError('')
 
+    const { error: cashError } = await supabase
+      .from('cash_entries')
+      .delete()
+      .eq('request_id', pendingDelete.id)
+
+    if (cashError) {
+      setDeleteError(
+        `O lançamento do caixa não foi removido: ${cashError.message}`
+      )
+      return
+    }
+
     const { data, error } = await supabase
       .from('service_requests')
       .delete()
@@ -1746,32 +1758,20 @@ function ManagerRequests() {
       return
     }
 
-    const payload = {
-      preferred_date:
-        selected.preferred_date
+    const { error } = await supabase.rpc(
+      'confirm_service_request',
+      {
+        _request_id: selected.id,
+        _preferred_date: selected.preferred_date
           ? formatDateInput(selected.preferred_date)
           : null,
-
-      scheduled_at: scheduledAt,
-
-      negotiated_price:
-        selected.negotiated_price == null
+        _scheduled_at: scheduledAt,
+        _negotiated_price: selected.negotiated_price == null
           ? null
           : Number(selected.negotiated_price),
-
-      professional_id:
-        selected.professional_id ||
-        null,
-
-      status: 'confirmed',
-    }
-
-    const {
-      error,
-    } = await supabase
-      .from('service_requests')
-      .update(payload)
-      .eq('id', selected.id)
+        _professional_id: selected.professional_id || null,
+      }
+    )
 
     if (error) {
       setActionError(`Não foi possível salvar: ${error.message}`)

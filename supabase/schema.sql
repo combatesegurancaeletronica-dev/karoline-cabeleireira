@@ -932,6 +932,76 @@ on function public.ensure_client_account()
 to authenticated;
 
 
+create or replace function public.confirm_service_request(
+    _request_id uuid,
+    _preferred_date text,
+    _scheduled_at timestamptz,
+    _negotiated_price numeric,
+    _professional_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_client_id uuid;
+    v_service_id uuid;
+begin
+    if not public.is_manager() then
+        raise exception 'Apenas o gestor pode confirmar solicitações.';
+    end if;
+
+    select client_id, service_id
+    into v_client_id, v_service_id
+    from public.service_requests
+    where id = _request_id;
+
+    if v_client_id is null or v_service_id is null then
+        raise exception 'Solicitação não encontrada.';
+    end if;
+
+    update public.service_requests
+    set
+        preferred_date = _preferred_date,
+        scheduled_at = _scheduled_at,
+        negotiated_price = _negotiated_price,
+        professional_id = _professional_id,
+        status = 'confirmed'
+    where id = _request_id;
+
+    delete from public.cash_entries
+    where request_id = _request_id;
+
+    if _negotiated_price is not null and _negotiated_price > 0 then
+        insert into public.cash_entries (
+            client_id,
+            service_id,
+            request_id,
+            kind,
+            description,
+            amount,
+            occurred_at
+        )
+        values (
+            v_client_id,
+            v_service_id,
+            _request_id,
+            'income',
+            'Serviço confirmado',
+            _negotiated_price,
+            coalesce(_scheduled_at, now())
+        );
+    end if;
+end;
+$$;
+
+
+grant execute
+on function public.confirm_service_request(uuid, text, timestamptz, numeric, uuid)
+to authenticated;
+
+
 create policy cash_manager_all
 on public.cash_entries
 for all
