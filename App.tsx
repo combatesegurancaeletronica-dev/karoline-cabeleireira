@@ -197,6 +197,29 @@ function formatDateTime(value: string | null) {
     : d.toLocaleString('pt-BR')
 }
 
+async function openWhatsAppOrSms(message: string) {
+  const encodedMessage = encodeURIComponent(message)
+  const whatsappUrl = `whatsapp://send?phone=${WHATSAPP}&text=${encodedMessage}`
+  const webWhatsAppUrl = `https://wa.me/${WHATSAPP}?text=${encodedMessage}`
+  const smsUrl = `sms:+${WHATSAPP}?body=${encodedMessage}`
+
+  try {
+    if (Platform.OS === 'web') {
+      await Linking.openURL(webWhatsAppUrl)
+      return
+    }
+
+    if (await Linking.canOpenURL(whatsappUrl)) {
+      await Linking.openURL(whatsappUrl)
+      return
+    }
+
+    await Linking.openURL(smsUrl)
+  } catch {
+    await Linking.openURL(webWhatsAppUrl).catch(() => {})
+  }
+}
+
 function authErrorMessage(error: any) {
   const message = String(error?.message || '')
   const lowerMessage = message.toLowerCase()
@@ -969,10 +992,8 @@ function AuthScreen() {
 
         <Pressable
           onPress={() =>
-            Linking.openURL(
-              `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
-                'Olá, gostaria de agendar um atendimento na Karoline Cabeleireira.'
-              )}`
+            openWhatsAppOrSms(
+              'Olá, gostaria de agendar um atendimento na Karoline Cabeleireira.'
             )
           }
         >
@@ -4418,10 +4439,8 @@ function ClientHome({
         <Button
           title="Abrir WhatsApp"
           onPress={() =>
-            Linking.openURL(
-              `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(
-                `Olá, sou ${profile.full_name} e gostaria de agendar um atendimento.`
-              )}`
+            openWhatsAppOrSms(
+              `Olá, sou ${profile.full_name} e gostaria de agendar um atendimento.`
             )
           }
         />
