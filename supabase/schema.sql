@@ -814,6 +814,72 @@ using (
 );
 
 
+create or replace function public.create_service_requests(
+    _service_ids uuid[],
+    _notes text default null,
+    _voucher_code text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_client_id uuid;
+    v_requested_count integer;
+    v_inserted_count integer;
+begin
+    select c.id
+    into v_client_id
+    from public.clients c
+    where c.user_id = auth.uid()
+      and c.active = true;
+
+    if v_client_id is null then
+        raise exception 'O cliente não está cadastrado na sua conta.';
+    end if;
+
+    select count(*)
+    into v_requested_count
+    from unnest(_service_ids) as requested(service_id)
+    join public.services s on s.id = requested.service_id
+    where s.active = true;
+
+    if coalesce(v_requested_count, 0) = 0
+       or v_requested_count <> coalesce(array_length(_service_ids, 1), 0)
+    then
+        raise exception 'Um ou mais serviços selecionados não estão disponíveis.';
+    end if;
+
+    insert into public.service_requests (
+        client_id,
+        service_id,
+        notes,
+        voucher_code,
+        status
+    )
+    select
+        v_client_id,
+        requested.service_id,
+        nullif(trim(_notes), ''),
+        nullif(trim(_voucher_code), ''),
+        'new'
+    from unnest(_service_ids) as requested(service_id);
+
+    get diagnostics v_inserted_count = row_count;
+
+    if v_inserted_count <> v_requested_count then
+        raise exception 'Não foi possível criar todas as solicitações.';
+    end if;
+end;
+$$;
+
+
+grant execute
+on function public.create_service_requests(uuid[], text, text)
+to authenticated;
+
+
 create policy cash_manager_all
 on public.cash_entries
 for all

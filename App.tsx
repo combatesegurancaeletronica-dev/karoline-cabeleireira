@@ -4572,52 +4572,15 @@ function ServiceRequest({
     setSendError('')
 
     try {
-      let client
-
-      // Tenta buscar cliente existente
-      const { data: existingClient, error: searchError } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('user_id', profile.id)
-        .maybeSingle()
-
-      if (searchError) {
-        setSendError(
-          `Erro ao buscar cliente: ${searchError.message}`
-        )
-        setSendingRequest(false)
-        return
-      }
-
-      if (!existingClient) {
-        setSendError(
-          'O cliente não está cadastrado na minha conta.'
-        )
-        setSendingRequest(false)
-        return
-      }
-
-      client = existingClient
-
-      const requestsToInsert =
-        selectedServices.map(
-          (serviceId) => ({
-            client_id: client.id,
-            service_id: serviceId,
-            notes:
-              notes.trim() || null,
-            voucher_code:
-              voucher
-                .trim()
-                .toUpperCase() ||
-              null,
-            status: 'new',
-          })
-        )
-
-      const { error } = await supabase
-        .from('service_requests')
-        .insert(requestsToInsert)
+      const { error } = await supabase.rpc(
+        'create_service_requests',
+        {
+          _service_ids: selectedServices,
+          _notes: notes.trim() || null,
+          _voucher_code:
+            voucher.trim().toUpperCase() || null,
+        }
+      )
 
       if (error) {
         setSendError(
