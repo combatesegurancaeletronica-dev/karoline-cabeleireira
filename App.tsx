@@ -3303,7 +3303,7 @@ function CashManager() {
 
     if (
       !description.trim() ||
-      Number.isNaN(value) ||
+      value == null ||
       value <= 0
     ) {
       return Alert.alert(
