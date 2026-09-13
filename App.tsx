@@ -197,6 +197,76 @@ function formatDateTime(value: string | null) {
     : d.toLocaleString('pt-BR')
 }
 
+function formatDateInput(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  const parts = [
+    digits.slice(0, 2),
+    digits.slice(2, 4),
+    digits.slice(4, 8),
+  ].filter(Boolean)
+
+  return parts.join('/')
+}
+
+function formatDateTimeInput(value: string) {
+  if (value.includes('T') || /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    const date = new Date(value)
+
+    if (!Number.isNaN(date.getTime())) {
+      const day = String(date.getDate()).padStart(2, '0')
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = date.getFullYear()
+      const hour = String(date.getHours()).padStart(2, '0')
+      const minute = String(date.getMinutes()).padStart(2, '0')
+      return `${day}/${month}/${year} ${hour}:${minute}`
+    }
+  }
+
+  const digits = value.replace(/\D/g, '').slice(0, 12)
+  const date = formatDateInput(digits.slice(0, 8))
+  const timeDigits = digits.slice(8)
+  const time = [
+    timeDigits.slice(0, 2),
+    timeDigits.slice(2, 4),
+  ].filter(Boolean).join(':')
+
+  return time ? `${date} ${time}` : date
+}
+
+function parseDateTimeInput(value: string) {
+  const match = value.match(
+    /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/
+  )
+
+  if (!match) return null
+
+  const [, day, month, year, hour, minute] = match
+  const date = new Date(
+    `${year}-${month}-${day}T${hour}:${minute}:00`
+  )
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+function formatPriceInput(value: number | null) {
+  if (value == null) return ''
+
+  return Number(value).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+}
+
+function parsePriceInput(value: string) {
+  const normalized = value
+    .replace(/\./g, '')
+    .replace(',', '.')
+    .replace(/[^\d.-]/g, '')
+
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
 async function openWhatsAppOrSms(message: string) {
   const encodedMessage = encodeURIComponent(message)
   const whatsappUrl = `whatsapp://send?phone=${WHATSAPP}&text=${encodedMessage}`
@@ -1663,21 +1733,31 @@ function ManagerRequests() {
   async function saveAppointment() {
     if (!selected) return
 
+    setActionError('')
+
+    const scheduledAt = selected.scheduled_at
+      ? parseDateTimeInput(selected.scheduled_at)
+      : null
+
+    if (selected.scheduled_at && !scheduledAt) {
+      setActionError(
+        'Informe a data e hora confirmadas no formato DD/MM/AAAA HH:MM.'
+      )
+      return
+    }
+
     const payload = {
       preferred_date:
-        selected.preferred_date ||
-        null,
+        selected.preferred_date
+          ? formatDateInput(selected.preferred_date)
+          : null,
 
-      scheduled_at:
-        selected.scheduled_at ||
-        null,
+      scheduled_at: scheduledAt,
 
       negotiated_price:
         selected.negotiated_price == null
           ? null
-          : Number(
-              selected.negotiated_price
-            ),
+          : Number(selected.negotiated_price),
 
       professional_id:
         selected.professional_id ||
@@ -1694,10 +1774,7 @@ function ManagerRequests() {
       .eq('id', selected.id)
 
     if (error) {
-      Alert.alert(
-        'Erro',
-        error.message
-      )
+      setActionError(`Não foi possível salvar: ${error.message}`)
     } else {
       Alert.alert(
         'Agendamento salvo',
@@ -1873,16 +1950,16 @@ function ManagerRequests() {
 
                   <Field
                     value={
-                      selected.preferred_date ||
-                      ''
+                      formatDateInput(selected.preferred_date || '')
                     }
                     onChangeText={(v) =>
                       setSelected({
                         ...selected,
-                        preferred_date: v,
+                        preferred_date: formatDateInput(v),
                       })
                     }
-                    placeholder="20/09/2026"
+                    placeholder="DD/MM/AAAA"
+                    keyboardType="numeric"
                   />
 
                   <Text style={styles.label}>
@@ -1891,16 +1968,18 @@ function ManagerRequests() {
 
                   <Field
                     value={
-                      selected.scheduled_at ||
-                      ''
+                      formatDateTimeInput(
+                        selected.scheduled_at || ''
+                      )
                     }
                     onChangeText={(v) =>
                       setSelected({
                         ...selected,
-                        scheduled_at: v,
+                        scheduled_at: formatDateTimeInput(v),
                       })
                     }
-                    placeholder="20/09/2026 14:00"
+                    placeholder="DD/MM/AAAA HH:MM"
+                    keyboardType="numeric"
                   />
 
                   <Text style={styles.label}>
@@ -1908,24 +1987,11 @@ function ManagerRequests() {
                   </Text>
 
                   <Field
-                    value={
-                      selected.negotiated_price ==
-                      null
-                        ? ''
-                        : String(
-                            selected.negotiated_price
-                          )
-                    }
+                    value={formatPriceInput(selected.negotiated_price)}
                     onChangeText={(v) =>
                       setSelected({
                         ...selected,
-                        negotiated_price:
-                          Number(
-                            v.replace(
-                              ',',
-                              '.'
-                            )
-                          ) || 0,
+                        negotiated_price: parsePriceInput(v),
                       })
                     }
                     placeholder="Ex.: 120,00"
@@ -1941,34 +2007,36 @@ function ManagerRequests() {
                       key={p.id}
                       style={[
                         styles.choice,
-                        selected.professional_id ===
-                          p.id &&
+                        selected.professional_id === p.id &&
                           styles.choiceSelected,
                       ]}
                       onPress={() =>
                         setSelected({
                           ...selected,
-                          professional_id:
-                            p.id,
+                          professional_id: p.id,
                         })
                       }
                     >
                       <Text
                         style={
-                          selected.professional_id ===
-                          p.id
+                          selected.professional_id === p.id
                             ? styles.choiceTextSelected
                             : styles.choiceText
                         }
                       >
-                        {p.name} —{' '}
-                        {p.specialty}
+                        {p.name} — {p.specialty}
                       </Text>
                     </Pressable>
                   ))}
 
+                  {actionError ? (
+                    <Text style={styles.authError}>
+                      {actionError}
+                    </Text>
+                  ) : null}
+
                   <Button
-                    title="Confirmar e salvar"
+                    title="Salvar e confirmar"
                     onPress={saveAppointment}
                   />
 
@@ -1976,19 +2044,14 @@ function ManagerRequests() {
                     title="Marcar como concluído"
                     secondary
                     onPress={() =>
-                      saveStatus(
-                        selected.id,
-                        'completed'
-                      )
+                      saveStatus(selected.id, 'completed')
                     }
                   />
 
                   <Button
                     title="Fechar"
                     secondary
-                    onPress={() =>
-                      setSelected(null)
-                    }
+                    onPress={() => setSelected(null)}
                   />
                 </>
               )}
@@ -2006,9 +2069,7 @@ function ManagerRequests() {
             A solicitação de {pendingDelete.client_name} será apagada definitivamente.
           </Text>
           {deleteError ? (
-            <Text style={styles.authError}>
-              {deleteError}
-            </Text>
+            <Text style={styles.authError}>{deleteError}</Text>
           ) : null}
           <Button
             title="Excluir definitivamente"
@@ -2036,10 +2097,7 @@ function ManagerRequests() {
             danger
             onPress={() => {
               setActionError('')
-              saveStatus(
-                recusarPendente.id,
-                'cancelled'
-              )
+              saveStatus(recusarPendente.id, 'cancelled')
               setRecusarPendente(null)
             }}
           />
