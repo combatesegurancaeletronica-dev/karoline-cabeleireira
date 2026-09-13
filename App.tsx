@@ -4630,6 +4630,14 @@ function ServiceRequest({
           gestor fará a negociação.
         </Text>
 
+        {selectedServices.length > 0 ? (
+          <Text style={styles.selectedServiceText}>
+            {selectedServices.length === 1
+              ? '1 serviço selecionado'
+              : `${selectedServices.length} serviços selecionados`}
+          </Text>
+        ) : null}
+
         <Text style={styles.label}>
           Voucher
         </Text>
@@ -4701,7 +4709,7 @@ function ServiceRequest({
           </View>
         ) : (
           <Button
-            title="Enviar solicitação"
+            title="Solicitar serviço"
             onPress={send}
           />
         )}
@@ -5688,6 +5696,12 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontSize: 12,
     lineHeight: 18,
+    marginTop: 8,
+  },
+
+  selectedServiceText: {
+    color: COLORS.primaryDark,
+    fontWeight: '800',
     marginTop: 8,
   },
 
