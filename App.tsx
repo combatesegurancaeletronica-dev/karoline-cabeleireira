@@ -3116,9 +3116,6 @@ function CashManager() {
   const [clientId, setClientId] =
     useState('')
 
-  const [serviceId, setServiceId] =
-    useState('')
-
   const [period, setPeriod] =
     useState<'day' | 'week' | 'month'>(
       'day'
@@ -3333,8 +3330,7 @@ function CashManager() {
       amount: value,
       client_id:
         clientId || null,
-      service_id:
-        serviceId || null,
+      service_id: null,
     }
 
     const {
@@ -3354,7 +3350,6 @@ function CashManager() {
     setDescription('')
     setAmount('')
     setClientId('')
-    setServiceId('')
 
     load()
   }
@@ -3485,40 +3480,6 @@ function CashManager() {
                 </Pressable>
               )
             )}
-          </>
-        ) : null}
-
-        {kind === 'income' ? (
-          <>
-            <Text style={styles.label}>
-              Serviço
-            </Text>
-
-            {services
-              .filter(
-                (service) =>
-                  service.active
-              )
-              .map((service) => (
-                <Pressable
-                  key={service.id}
-                  onPress={() =>
-                    setServiceId(
-                      service.id
-                    )
-                  }
-                  style={[
-                    styles.choice,
-                    serviceId ===
-                      service.id &&
-                      styles.choiceSelected,
-                  ]}
-                >
-                  <Text>
-                    {service.name}
-                  </Text>
-                </Pressable>
-              ))}
           </>
         ) : null}
 
