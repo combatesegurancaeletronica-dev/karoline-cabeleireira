@@ -269,22 +269,12 @@ function playNotificationSound() {
   } catch {}
 }
 
-function announceServiceRequest(clientName: string) {
+async function announceServiceRequest(clientName: string) {
   playNotificationSound()
 
   const message = `Solicitação da cliente ${clientName}.`
 
-  if (typeof window !== 'undefined' && window.speechSynthesis) {
-    const utterance = new SpeechSynthesisUtterance(message)
-    utterance.lang = 'pt-BR'
-    utterance.rate = 0.95
-    utterance.volume = 1
-    window.speechSynthesis.cancel()
-    window.speechSynthesis.speak(utterance)
-    return
-  }
-
-  Speech.stop()
+  await Speech.stop()
   Speech.speak(message, {
     language: 'pt-BR',
     rate: 0.95,
@@ -1232,7 +1222,7 @@ function ManagerApp({
           ])
         } catch {}
 
-        announceServiceRequest(clientName)
+        announceServiceRequest(clientName).catch(() => {})
 
         if (notificationsEnabled) {
           notifyManagerNewRequest(clientName).catch(() => {})
@@ -1274,7 +1264,7 @@ function ManagerApp({
           style={styles.audioEnableBanner}
           onPress={() => {
             setAudioEnabled(true)
-            announceServiceRequest('teste de áudio')
+            announceServiceRequest('teste de áudio').catch(() => {})
           }}
         >
           <Text style={styles.alertBannerTitle}>
