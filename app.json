@@ -13,7 +13,8 @@
       "**/*"
     ],
     "plugins": [
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-notifications"
     ]
   }
 }

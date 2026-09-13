@@ -13,7 +13,18 @@ import {
   View,
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import * as Notifications from 'expo-notifications'
+import * as Speech from 'expo-speech'
 import { supabase } from './src/lib/supabase'
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+})
 
 const WHATSAPP = '5512992588955'
 
@@ -261,16 +272,51 @@ function playNotificationSound() {
 function announceServiceRequest(clientName: string) {
   playNotificationSound()
 
-  if (typeof window === 'undefined' || !window.speechSynthesis) return
+  const message = `Solicitação da cliente ${clientName}.`
 
-  const utterance = new SpeechSynthesisUtterance(
-    `É uma solicitação de serviço da ${clientName}.`
-  )
-  utterance.lang = 'pt-BR'
-  utterance.rate = 0.95
-  utterance.volume = 1
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(utterance)
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    const utterance = new SpeechSynthesisUtterance(message)
+    utterance.lang = 'pt-BR'
+    utterance.rate = 0.95
+    utterance.volume = 1
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utterance)
+    return
+  }
+
+  Speech.stop()
+  Speech.speak(message, {
+    language: 'pt-BR',
+    rate: 0.95,
+    volume: 1,
+  })
+}
+
+async function configureManagerNotifications() {
+  if (typeof Notifications.setNotificationChannelAsync === 'function') {
+    await Notifications.setNotificationChannelAsync('service-requests', {
+      name: 'Solicitações de serviço',
+      importance: Notifications.AndroidImportance.HIGH,
+      sound: 'default',
+    })
+  }
+
+  const current = await Notifications.getPermissionsAsync()
+  if (current.granted) return true
+
+  const requested = await Notifications.requestPermissionsAsync()
+  return requested.granted
+}
+
+async function notifyManagerNewRequest(clientName: string) {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Nova solicitação',
+      body: `Solicitação da cliente ${clientName}.`,
+      sound: 'default',
+    },
+    trigger: null,
+  })
 }
 
 function Button({
@@ -1072,7 +1118,7 @@ function BottomNav({
     news: 'Novidades',
     cash: 'Caixa',
     loyalty: 'Fidelidade',
-    request: 'Solicitar',
+    request: 'Enviar solicitação',
     schedule: 'Agenda',
   }
 
@@ -1136,6 +1182,13 @@ function ManagerApp({
     let previousCount = 0
     let previousRequestId = ''
     let initialized = false
+    let notificationsEnabled = false
+
+    configureManagerNotifications()
+      .then((enabled) => {
+        notificationsEnabled = enabled
+      })
+      .catch(() => {})
 
     const check = async () => {
       const [{ count }, { data: latestRows }] = await Promise.all([
@@ -1180,6 +1233,10 @@ function ManagerApp({
         } catch {}
 
         announceServiceRequest(clientName)
+
+        if (notificationsEnabled) {
+          notifyManagerNewRequest(clientName).catch(() => {})
+        }
       }
 
       previousCount = nextCount
@@ -4448,31 +4505,15 @@ function ServiceRequest({
         return
       }
 
-      // Se não encontrou, tenta criar automaticamente
       if (!existingClient) {
-        const { data: newClient, error: createError } = await supabase
-          .from('clients')
-          .insert({
-            user_id: profile.id,
-            full_name: profile.full_name || 'Cliente',
-            phone: profile.phone || '',
-            active: true,
-          })
-          .select('id')
-          .maybeSingle()
-
-        if (createError || !newClient) {
-          setSendError(
-            `Erro ao criar cadastro de cliente: ${createError?.message || 'Desconhecido'}. Por favor, entre em contato com o gestor.`
-          )
-          setSendingRequest(false)
-          return
-        }
-
-        client = newClient
-      } else {
-        client = existingClient
+        setSendError(
+          'O cliente não está cadastrado na minha conta.'
+        )
+        setSendingRequest(false)
+        return
       }
+
+      client = existingClient
 
       const requestsToInsert =
         selectedServices.map(
@@ -4521,7 +4562,7 @@ function ServiceRequest({
   return (
     <>
       <SectionTitle subtitle="Os serviços são carregados do cadastro do gestor. O valor não aparece.">
-        Solicitar serviço
+        Enviar solicitação
       </SectionTitle>
 
       <Card>
@@ -4606,7 +4647,7 @@ function ServiceRequest({
             borderRadius: 6,
             padding: 10,
             marginVertical: 8,
-            minHeight: 120,
+            minHeight: 180,
           }}
         >
           <TextInput
@@ -4903,21 +4944,6 @@ function ClientSchedule({
             <Text>
               Status: {r.status}
             </Text>
-
-            <Text>
-              Data desejada:{' '}
-              {r.preferred_date ||
-                'A combinar'}
-            </Text>
-
-            {r.scheduled_at ? (
-              <Text>
-                Agendado para:{' '}
-                {formatDateTime(
-                  r.scheduled_at
-                )}
-              </Text>
-            ) : null}
 
             {r.professional_name ? (
               <Text>
