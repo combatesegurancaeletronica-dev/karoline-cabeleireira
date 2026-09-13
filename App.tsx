@@ -3299,10 +3299,7 @@ function CashManager() {
       )
 
   async function add() {
-    const value =
-      Number(
-        amount.replace(',', '.')
-      )
+    const value = parsePriceInput(amount)
 
     if (
       !description.trim() ||
@@ -3626,6 +3623,22 @@ function CashManager() {
             )?.full_name ||
               'Sem cliente'}
           </Text>
+
+          {row.service_id ? (
+            <Text>
+              Serviço:{' '}
+              {services.find(
+                (service) =>
+                  service.id === row.service_id
+              )?.name || 'Serviço não encontrado'}
+            </Text>
+          ) : null}
+
+          {row.request_id ? (
+            <Text style={styles.helperText}>
+              Origem: solicitação confirmada
+            </Text>
+          ) : null}
 
           <Text style={styles.helperText}>
             {formatDateTime(

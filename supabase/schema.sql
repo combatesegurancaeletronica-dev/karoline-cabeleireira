@@ -216,6 +216,9 @@ create index if not exists idx_cash_entries_client
 create index if not exists idx_cash_entries_occurred_at
     on public.cash_entries(occurred_at);
 
+create index if not exists idx_cash_entries_request
+    on public.cash_entries(request_id);
+
 
 create table if not exists public.loyalty_settings (
     id integer primary key default 1,
@@ -1000,6 +1003,34 @@ $$;
 grant execute
 on function public.confirm_service_request(uuid, text, timestamptz, numeric, uuid)
 to authenticated;
+
+
+insert into public.cash_entries (
+    client_id,
+    service_id,
+    request_id,
+    kind,
+    description,
+    amount,
+    occurred_at
+)
+select
+    sr.client_id,
+    sr.service_id,
+    sr.id,
+    'income',
+    'Serviço confirmado',
+    sr.negotiated_price,
+    coalesce(sr.scheduled_at, sr.created_at)
+from public.service_requests sr
+where sr.status = 'confirmed'
+  and sr.negotiated_price is not null
+  and sr.negotiated_price > 0
+  and not exists (
+      select 1
+      from public.cash_entries ce
+      where ce.request_id = sr.id
+  );
 
 
 create policy cash_manager_all
