@@ -252,7 +252,7 @@ function formatPriceInput(value: number | null) {
   if (value == null) return ''
 
   return Number(value).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   })
 }
