@@ -4,6 +4,7 @@ import {
   Alert,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -279,15 +280,22 @@ async function announceServiceRequest(clientName: string) {
     language: 'pt-BR',
     rate: 0.95,
     volume: 1,
+    useApplicationAudioSession: true,
   })
 }
 
 async function configureManagerNotifications() {
-  if (typeof Notifications.setNotificationChannelAsync === 'function') {
+  if (
+    Platform.OS === 'android' &&
+    typeof Notifications.setNotificationChannelAsync === 'function'
+  ) {
+    await Notifications.deleteNotificationChannelAsync('service-requests')
     await Notifications.setNotificationChannelAsync('service-requests', {
       name: 'Solicitações de serviço',
       importance: Notifications.AndroidImportance.HIGH,
       sound: 'default',
+      vibrationPattern: [0, 600, 250, 600, 250, 1000],
+      bypassDnd: true,
     })
   }
 
@@ -304,6 +312,11 @@ async function notifyManagerNewRequest(clientName: string) {
       title: 'Nova solicitação',
       body: `Solicitação da cliente ${clientName}.`,
       sound: 'default',
+      vibrate: [0, 600, 250, 600, 250, 1000],
+      channelId: 'service-requests',
+      interruptionLevel: 'timeSensitive',
+    } as Notifications.NotificationContentInput & {
+      channelId: string
     },
     trigger: null,
   })
@@ -1254,10 +1267,16 @@ function ManagerApp({
           ])
         } catch {}
 
-        announceServiceRequest(clientName).catch(() => {})
-
         if (notificationsEnabled) {
-          notifyManagerNewRequest(clientName).catch(() => {})
+          notifyManagerNewRequest(clientName)
+            .catch(() => {})
+            .finally(() => {
+              setTimeout(() => {
+                announceServiceRequest(clientName).catch(() => {})
+              }, 1200)
+            })
+        } else {
+          announceServiceRequest(clientName).catch(() => {})
         }
       }
 
