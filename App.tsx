@@ -4753,13 +4753,13 @@ function ServiceRequest({
           gestor fará a negociação.
         </Text>
 
-        {selectedServices.length > 0 ? (
-          <Text style={styles.selectedServiceText}>
-            {selectedServices.length === 1
-              ? '1 serviço selecionado'
-              : `${selectedServices.length} serviços selecionados`}
-          </Text>
-        ) : null}
+        <Text style={styles.selectedServiceText}>
+          {selectedServices.length === 0
+            ? 'Nenhum serviço selecionado'
+            : selectedServices.length === 1
+            ? '1 serviço selecionado'
+            : `${selectedServices.length} serviços selecionados`}
+        </Text>
 
         <Text style={styles.label}>
           Voucher
@@ -5839,6 +5839,7 @@ const styles = StyleSheet.create({
     color: COLORS.primaryDark,
     fontWeight: '800',
     marginTop: 8,
+    minHeight: 20,
   },
 
   grid: {
