@@ -436,12 +436,19 @@ function Card({ children }: { children: React.ReactNode }) {
 
 class ServiceRequestErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean }
+  { hasError: boolean; errorMessage: string; retryKey: number }
 > {
-  state = { hasError: false }
+  state = { hasError: false, errorMessage: '', retryKey: 0 }
 
-  static getDerivedStateFromError() {
-    return { hasError: true }
+  static getDerivedStateFromError(error: Error) {
+    return {
+      hasError: true,
+      errorMessage: error?.message || 'Erro inesperado ao abrir a tela.',
+    }
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('Erro na tela de solicitação:', error)
   }
 
   render() {
@@ -454,15 +461,24 @@ class ServiceRequestErrorBoundary extends React.Component<
           <Text style={styles.muted}>
             Tente novamente para continuar no aplicativo.
           </Text>
+          <Text style={styles.helperText}>
+            {this.state.errorMessage}
+          </Text>
           <Button
             title="Tentar novamente"
-            onPress={() => this.setState({ hasError: false })}
+            onPress={() =>
+              this.setState((state) => ({
+                hasError: false,
+                errorMessage: '',
+                retryKey: state.retryKey + 1,
+              }))
+            }
           />
         </Card>
       )
     }
 
-    return this.props.children
+    return <React.Fragment key={this.state.retryKey}>{this.props.children}</React.Fragment>
   }
 }
 
@@ -4521,7 +4537,11 @@ function ServiceRequest({
 
       if (error) throw error
 
-      setServices(data || [])
+      setServices(
+        (data || []).filter(
+          (service) => Boolean(service?.id && service?.name)
+        )
+      )
     } catch (error: any) {
       setServices([])
       Alert.alert(
