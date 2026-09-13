@@ -4431,25 +4431,47 @@ function ServiceRequest({
     setSendError('')
 
     try {
-      const {
-        data: client,
-        error: clientError,
-      } = await supabase
+      let client
+
+      // Tenta buscar cliente existente
+      const { data: existingClient, error: searchError } = await supabase
         .from('clients')
         .select('id')
         .eq('user_id', profile.id)
         .maybeSingle()
 
-      if (
-        clientError ||
-        !client
-      ) {
+      if (searchError) {
         setSendError(
-          clientError?.message ||
-            'Não encontramos o cadastro de cliente vinculado à sua conta.'
+          `Erro ao buscar cliente: ${searchError.message}`
         )
         setSendingRequest(false)
         return
+      }
+
+      // Se não encontrou, tenta criar automaticamente
+      if (!existingClient) {
+        const { data: newClient, error: createError } = await supabase
+          .from('clients')
+          .insert({
+            user_id: profile.id,
+            full_name: profile.full_name || 'Cliente',
+            phone: profile.phone || '',
+            active: true,
+          })
+          .select('id')
+          .maybeSingle()
+
+        if (createError || !newClient) {
+          setSendError(
+            `Erro ao criar cadastro de cliente: ${createError?.message || 'Desconhecido'}. Por favor, entre em contato com o gestor.`
+          )
+          setSendingRequest(false)
+          return
+        }
+
+        client = newClient
+      } else {
+        client = existingClient
       }
 
       const requestsToInsert =
