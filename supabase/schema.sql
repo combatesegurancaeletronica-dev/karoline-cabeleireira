@@ -880,6 +880,58 @@ on function public.create_service_requests(uuid[], text, text)
 to authenticated;
 
 
+create or replace function public.ensure_client_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_user_id uuid := auth.uid();
+    v_full_name text;
+    v_phone text;
+    v_role public.app_role;
+begin
+    if v_user_id is null then
+        raise exception 'Usuário não autenticado.';
+    end if;
+
+    select
+        coalesce(raw_user_meta_data ->> 'full_name', 'Cliente'),
+        coalesce(raw_user_meta_data ->> 'phone', '')
+    into v_full_name, v_phone
+    from auth.users
+    where id = v_user_id;
+
+    select role
+    into v_role
+    from public.profiles
+    where id = v_user_id;
+
+    if v_role is null then
+        insert into public.profiles (id, full_name, phone, role)
+        values (v_user_id, v_full_name, v_phone, 'client');
+        v_role := 'client';
+    end if;
+
+    if v_role = 'client' then
+        insert into public.clients (user_id, full_name, phone, active)
+        values (v_user_id, v_full_name, v_phone, true)
+        on conflict (user_id) do update
+        set
+            full_name = excluded.full_name,
+            phone = excluded.phone,
+            active = true;
+    end if;
+end;
+$$;
+
+
+grant execute
+on function public.ensure_client_account()
+to authenticated;
+
+
 create policy cash_manager_all
 on public.cash_entries
 for all

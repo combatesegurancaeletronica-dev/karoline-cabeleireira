@@ -513,6 +513,16 @@ async function loadProfile(userId: string) {
   return data as Profile
 }
 
+async function ensureClientAccount() {
+  const { error } = await supabase.rpc(
+    'ensure_client_account'
+  )
+
+  if (error && error.code !== 'PGRST202') {
+    throw error
+  }
+}
+
 export default function App() {
   const [session, setSession] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -593,6 +603,8 @@ export default function App() {
       setProfileError(null)
 
       try {
+        await ensureClientAccount()
+
         const loadedProfile = await loadProfile(
           session.user.id
         )
