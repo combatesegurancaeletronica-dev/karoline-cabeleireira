@@ -3096,6 +3096,9 @@ function CashManager() {
   const [rows, setRows] =
     useState<any[]>([])
 
+  const [confirmedServices, setConfirmedServices] =
+    useState<any[]>([])
+
   const [clients, setClients] =
     useState<Client[]>([])
 
@@ -3116,6 +3119,9 @@ function CashManager() {
   const [clientId, setClientId] =
     useState('')
 
+  const [serviceId, setServiceId] =
+    useState('')
+
   const [period, setPeriod] =
     useState<'day' | 'week' | 'month'>(
       'day'
@@ -3132,6 +3138,9 @@ function CashManager() {
       },
       {
         data: serviceData,
+      },
+      {
+        data: confirmedServiceData,
       },
     ] = await Promise.all([
       supabase
@@ -3154,6 +3163,15 @@ function CashManager() {
           'id,name,price,active'
         )
         .order('name'),
+
+      supabase
+        .from('service_requests')
+        .select(
+          'id,client_id,service_id,negotiated_price,status,scheduled_at,services(name)'
+        )
+        .in('status', ['confirmed', 'completed'])
+        .not('negotiated_price', 'is', null)
+        .order('scheduled_at', { ascending: false }),
     ])
 
     if (error) {
@@ -3174,6 +3192,8 @@ function CashManager() {
       (serviceData ||
         []) as Service[]
     )
+
+    setConfirmedServices(confirmedServiceData || [])
   }
 
   useEffect(() => {
@@ -3298,14 +3318,10 @@ function CashManager() {
   async function add() {
     const value = parsePriceInput(amount)
 
-    if (
-      !description.trim() ||
-      value == null ||
-      value <= 0
-    ) {
+    if (value == null || value <= 0) {
       return Alert.alert(
         'Atenção',
-        'Informe descrição e valor válidos.'
+        'Informe um valor válido.'
       )
     }
 
@@ -3326,11 +3342,18 @@ function CashManager() {
     const payload: any = {
       kind,
       description:
-        description.trim(),
+        description.trim() ||
+          (serviceId
+            ? `Serviço adicional: ${services.find(
+                (service) => service.id === serviceId
+              )?.name || 'Serviço'}`
+            : kind === 'expense'
+            ? 'Saída do caixa'
+            : 'Lançamento de atendimento'),
       amount: value,
       client_id:
         clientId || null,
-      service_id: null,
+      service_id: serviceId || null,
     }
 
     const {
@@ -3350,6 +3373,7 @@ function CashManager() {
     setDescription('')
     setAmount('')
     setClientId('')
+    setServiceId('')
 
     load()
   }
@@ -3483,6 +3507,34 @@ function CashManager() {
           </>
         ) : null}
 
+        {kind === 'income' ? (
+          <>
+            <Text style={styles.label}>
+              Serviço adicional (opcional)
+            </Text>
+
+            {services.filter((service) => service.active).map((service) => (
+              <Pressable
+                key={service.id}
+                onPress={() => {
+                  setServiceId(service.id)
+                  if (!amount) {
+                    setAmount(formatPriceInput(service.price))
+                  }
+                }}
+                style={[
+                  styles.choice,
+                  serviceId === service.id && styles.choiceSelected,
+                ]}
+              >
+                <Text>
+                  {service.name} ({formatMoney(service.price)})
+                </Text>
+              </Pressable>
+            ))}
+          </>
+        ) : null}
+
         <Field
           value={description}
           onChangeText={
@@ -3608,6 +3660,35 @@ function CashManager() {
           </Text>
         </Card>
       ))}
+
+      <SectionTitle>
+        Serviços confirmados
+      </SectionTitle>
+
+      {confirmedServices.length === 0 ? (
+        <Card>
+          <Text style={styles.muted}>
+            Nenhum serviço confirmado ou concluído.
+          </Text>
+        </Card>
+      ) : (
+        confirmedServices.map((request) => (
+          <Card key={request.id}>
+            <Text style={styles.itemTitle}>
+              {clients.find((client) => client.id === request.client_id)?.full_name || 'Cliente'}
+            </Text>
+            <Text>
+              Serviço: {request.services?.name || services.find((service) => service.id === request.service_id)?.name || 'Serviço'}
+            </Text>
+            <Text style={styles.price}>
+              Valor executado: {formatMoney(Number(request.negotiated_price || 0))}
+            </Text>
+            <Text style={styles.helperText}>
+              {request.status === 'completed' ? 'Concluído' : 'Confirmado'}
+            </Text>
+          </Card>
+        ))
+      )}
     </>
   )
 }
