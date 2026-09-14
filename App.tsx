@@ -28,6 +28,10 @@ Notifications.setNotificationHandler({
 })
 
 const WHATSAPP = '5512992588955'
+const AUTH_REDIRECT_URL =
+  Platform.OS === 'web' && typeof window !== 'undefined'
+    ? window.location.origin
+    : 'karolinecabeleireira://auth/callback'
 
 const COLORS = {
   bg: '#fff7fb',
@@ -133,6 +137,13 @@ type RequestRow = {
   client_name: string
   client_phone: string | null
   professional_name: string | null
+}
+
+type AvailabilitySlot = {
+  id: string
+  slot_date: string
+  start_time: string
+  available: boolean
 }
 
 function normalizePhone(phone: string) {
@@ -246,6 +257,22 @@ function parseDateTimeInput(value: string) {
   )
 
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+function parseDateInput(value: string) {
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (!match) return null
+
+  const [, day, month, year] = match
+  const date = new Date(`${year}-${month}-${day}T00:00:00`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function formatSlotDate(value: string) {
+  const date = new Date(`${value}T00:00:00`)
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString('pt-BR')
 }
 
 function formatPriceInput(value: number | null) {
@@ -883,6 +910,7 @@ function AuthScreen() {
           email: normalizedEmail,
           password,
           options: {
+            emailRedirectTo: AUTH_REDIRECT_URL,
             data: {
               full_name: name.trim(),
               phone: supabasePhone,
@@ -1499,6 +1527,10 @@ function ManagerApp({
         {tab === 'loyalty' && (
           <ManagerLoyaltyCloud />
         )}
+
+        {tab === 'schedule' && (
+          <ManagerAvailability />
+        )}
       </ScrollView>
 
       <BottomNav
@@ -1512,6 +1544,7 @@ function ManagerApp({
           'news',
           'cash',
           'loyalty',
+          'schedule',
         ]}
         active={tab}
         setTab={setTab}
@@ -1547,6 +1580,7 @@ function ManagerHome({
               setTab('requests')
             }
           >
+
             <Text
               style={styles.alertBannerTitle}
             >
@@ -1567,6 +1601,7 @@ function ManagerHome({
       <View style={styles.grid}>
         {[
           ['requests', 'Solicitações'],
+          ['schedule', 'Disponibilidade'],
           ['clients', 'Clientes'],
           ['professionals', 'Profissionais'],
           ['services', 'Serviços'],
@@ -1606,6 +1641,88 @@ function ManagerHome({
           </Pressable>
         ))}
       </View>
+    </>
+  )
+}
+
+function ManagerAvailability() {
+  const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  async function load() {
+    setLoading(true)
+    const { data, error: loadError } = await supabase
+      .from('availability_slots')
+      .select('id,slot_date,start_time,available')
+      .gte('slot_date', new Date().toISOString().slice(0, 10))
+      .order('slot_date')
+      .order('start_time')
+
+    if (loadError) setError(loadError.message)
+    setSlots((data || []) as AvailabilitySlot[])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+  }, [])
+
+  async function addSlot() {
+    const parsedDate = parseDateInput(date)
+    if (!parsedDate || !/^\d{2}:\d{2}$/.test(time)) {
+      setError('Informe a data como DD/MM/AAAA e o horário como HH:MM.')
+      return
+    }
+
+    const slotDate = `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}-${String(parsedDate.getDate()).padStart(2, '0')}`
+    const { error: insertError } = await supabase
+      .from('availability_slots')
+      .upsert({ slot_date: slotDate, start_time: time, available: true }, { onConflict: 'slot_date,start_time' })
+
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+
+    setDate('')
+    setTime('')
+    setError('')
+    load()
+  }
+
+  async function toggleSlot(slot: AvailabilitySlot) {
+    const { error: updateError } = await supabase
+      .from('availability_slots')
+      .update({ available: !slot.available })
+      .eq('id', slot.id)
+
+    if (updateError) setError(updateError.message)
+    else load()
+  }
+
+  return (
+    <>
+      <SectionTitle subtitle="Publique os horários que a cliente poderá escolher.">
+        Disponibilidade
+      </SectionTitle>
+      <Card>
+        <Text style={styles.label}>Nova data</Text>
+        <Field value={date} onChangeText={(value) => setDate(formatDateInput(value))} placeholder="DD/MM/AAAA" keyboardType="numeric" />
+        <Text style={styles.label}>Novo horário</Text>
+        <Field value={time} onChangeText={(value) => setTime(value.replace(/\D/g, '').slice(0, 4).replace(/(\d{2})(\d)/, '$1:$2'))} placeholder="HH:MM" keyboardType="numeric" />
+        {error ? <Text style={styles.authError}>{error}</Text> : null}
+        <Button title="Disponibilizar horário" onPress={addSlot} />
+      </Card>
+      {loading ? <ActivityIndicator color={COLORS.primary} /> : slots.map((slot) => (
+        <Card key={slot.id}>
+          <Text style={styles.itemTitle}>{formatSlotDate(slot.slot_date)} às {slot.start_time.slice(0, 5)}</Text>
+          <Text style={styles.muted}>{slot.available ? 'Visível para clientes' : 'Indisponível'}</Text>
+          <Button title={slot.available ? 'Marcar como indisponível' : 'Marcar como disponível'} secondary onPress={() => toggleSlot(slot)} />
+        </Card>
+      ))}
     </>
   )
 }
@@ -4547,6 +4664,9 @@ function ServiceRequest({
     setSelectedServices,
   ] = useState<string[]>([])
 
+  const [slots, setSlots] = useState<AvailabilitySlot[]>([])
+  const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null)
+
   const [notes, setNotes] =
     useState('')
 
@@ -4603,6 +4723,17 @@ function ServiceRequest({
           (service) => Boolean(service?.id && service?.name)
         )
       )
+
+      const { data: slotData, error: slotError } = await supabase
+        .from('availability_slots')
+        .select('id,slot_date,start_time,available')
+        .eq('available', true)
+        .gte('slot_date', new Date().toISOString().slice(0, 10))
+        .order('slot_date')
+        .order('start_time')
+
+      if (slotError) throw slotError
+      setSlots((slotData || []) as AvailabilitySlot[])
     } catch (error: any) {
       setServices([])
       Alert.alert(
@@ -4629,6 +4760,11 @@ function ServiceRequest({
       return
     }
 
+    if (!selectedSlot) {
+      setSendError('Escolha uma data e horário disponíveis.')
+      return
+    }
+
     setSendingRequest(true)
     setSendError('')
 
@@ -4642,6 +4778,9 @@ function ServiceRequest({
           _notes: notes.trim() || null,
           _voucher_code:
             voucher.trim().toUpperCase() || null,
+          _preferred_date: formatSlotDate(selectedSlot.slot_date),
+          _scheduled_at: new Date(`${selectedSlot.slot_date}T${selectedSlot.start_time}`).toISOString(),
+          _availability_id: selectedSlot.id,
         }
       )
 
@@ -4657,6 +4796,7 @@ function ServiceRequest({
       }
 
       setSelectedServices([])
+      setSelectedSlot(null)
       setNotes('')
       setVoucher('')
       setSendError('')
@@ -4743,6 +4883,22 @@ function ServiceRequest({
             ? '1 serviço selecionado'
             : `${selectedServices.length} serviços selecionados`}
         </Text>
+
+        <Text style={styles.label}>Data e horário disponíveis</Text>
+        {slots.length === 0 ? (
+          <Text style={styles.muted}>O gestor ainda não disponibilizou horários.</Text>
+        ) : slots.map((slot) => (
+          <Pressable
+            key={slot.id}
+            style={[styles.choice, selectedSlot?.id === slot.id && styles.choiceSelected]}
+            onPress={() => setSelectedSlot(slot)}
+          >
+            <Text style={selectedSlot?.id === slot.id ? styles.choiceTextSelected : styles.choiceText}>
+              {selectedSlot?.id === slot.id ? '✓ ' : '○ '}
+              {formatSlotDate(slot.slot_date)} às {slot.start_time.slice(0, 5)}
+            </Text>
+          </Pressable>
+        ))}
 
         <Text style={styles.label}>
           Voucher

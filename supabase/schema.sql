@@ -163,6 +163,21 @@ create table if not exists public.service_requests (
     created_at timestamptz not null default now()
 );
 
+create table if not exists public.availability_slots (
+    id uuid primary key default gen_random_uuid(),
+    slot_date date not null,
+    start_time time not null,
+    available boolean not null default true,
+    created_at timestamptz not null default now(),
+    constraint availability_slots_unique_time unique (slot_date, start_time)
+);
+
+create index if not exists idx_availability_slots_available
+    on public.availability_slots(slot_date, available, start_time);
+
+alter table public.service_requests
+    add column if not exists availability_id uuid;
+
 
 alter table public.service_requests
     add column if not exists client_id uuid;
@@ -277,6 +292,24 @@ create table if not exists public.loyalty_transactions (
 alter table public.loyalty_transactions
     add column if not exists expires_at timestamptz;
 
+delete from public.loyalty_transactions lt
+where lt.request_id is not null
+    and not exists (
+            select 1
+            from public.service_requests sr
+            where sr.id = lt.request_id
+                and sr.status = 'completed'
+    );
+
+alter table public.loyalty_transactions
+        drop constraint if exists loyalty_transactions_request_id_fkey;
+
+alter table public.loyalty_transactions
+        add constraint loyalty_transactions_request_id_fkey
+        foreign key (request_id)
+        references public.service_requests(id)
+        on delete cascade;
+
 
 create index if not exists idx_loyalty_transactions_client
     on public.loyalty_transactions(client_id);
@@ -359,6 +392,18 @@ begin
         add constraint service_requests_professional_id_fkey
         foreign key (professional_id)
         references public.professionals(id)
+        on delete set null;
+exception
+    when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+    alter table public.service_requests
+        add constraint service_requests_availability_id_fkey
+        foreign key (availability_id)
+        references public.availability_slots(id)
         on delete set null;
 exception
     when duplicate_object then null;
@@ -473,6 +518,7 @@ alter table public.vouchers enable row level security;
 alter table public.news enable row level security;
 alter table public.beauty_tips enable row level security;
 alter table public.service_requests enable row level security;
+alter table public.availability_slots enable row level security;
 alter table public.cash_entries enable row level security;
 alter table public.loyalty_settings enable row level security;
 alter table public.loyalty_rewards enable row level security;
@@ -554,6 +600,12 @@ on public.service_requests;
 
 drop policy if exists requests_manager_delete
 on public.service_requests;
+
+drop policy if exists availability_slots_authenticated_select
+on public.availability_slots;
+
+drop policy if exists availability_slots_manager_write
+on public.availability_slots;
 
 
 drop policy if exists cash_manager_all
@@ -816,11 +868,32 @@ using (
     public.is_manager()
 );
 
+create policy availability_slots_authenticated_select
+on public.availability_slots
+for select
+using (
+    auth.uid() is not null
+    and (available = true or public.is_manager())
+);
+
+create policy availability_slots_manager_write
+on public.availability_slots
+for all
+using (
+    public.is_manager()
+)
+with check (
+    public.is_manager()
+);
+
 
 create or replace function public.create_service_requests(
     _service_ids uuid[],
     _notes text default null,
-    _voucher_code text default null
+    _voucher_code text default null,
+    _preferred_date text default null,
+    _scheduled_at timestamptz default null,
+    _availability_id uuid default null
 )
 returns void
 language plpgsql
@@ -854,9 +927,23 @@ begin
         raise exception 'Um ou mais serviços selecionados não estão disponíveis.';
     end if;
 
+    if _availability_id is not null then
+        update public.availability_slots
+        set available = false
+        where id = _availability_id
+          and available = true;
+
+        if not found then
+            raise exception 'Este horário não está mais disponível.';
+        end if;
+    end if;
+
     insert into public.service_requests (
         client_id,
         service_id,
+        availability_id,
+        preferred_date,
+        scheduled_at,
         notes,
         voucher_code,
         status
@@ -864,6 +951,9 @@ begin
     select
         v_client_id,
         requested.service_id,
+        _availability_id,
+        nullif(trim(_preferred_date), ''),
+        _scheduled_at,
         nullif(trim(_notes), ''),
         nullif(trim(_voucher_code), ''),
         'new'
@@ -879,7 +969,7 @@ $$;
 
 
 grant execute
-on function public.create_service_requests(uuid[], text, text)
+on function public.create_service_requests(uuid[], text, text, text, timestamptz, uuid)
 to authenticated;
 
 
@@ -962,6 +1052,21 @@ begin
 
     if v_client_id is null or v_service_id is null then
         raise exception 'Solicitação não encontrada.';
+    end if;
+
+    if exists (
+        select 1
+        from public.service_requests
+        where id = _request_id
+          and availability_id is not null
+    ) then
+        update public.availability_slots
+        set available = false
+        where id = (
+            select availability_id
+            from public.service_requests
+            where id = _request_id
+        );
     end if;
 
     update public.service_requests
@@ -1273,6 +1378,34 @@ after update of status
 on public.service_requests
 for each row
 execute procedure public.award_loyalty_for_completed_request();
+
+create or replace function public.release_cancelled_availability()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if old.availability_id is not null
+       and (tg_op = 'DELETE' or new.status = 'cancelled')
+    then
+        update public.availability_slots
+        set available = true
+        where id = old.availability_id;
+    end if;
+
+    return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists trg_release_cancelled_availability
+on public.service_requests;
+
+create trigger trg_release_cancelled_availability
+after update of status or delete
+on public.service_requests
+for each row
+execute procedure public.release_cancelled_availability();
 
 
 insert into public.loyalty_rewards (

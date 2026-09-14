@@ -2,6 +2,7 @@
   "expo": {
     "name": "Karoline Cabeleireira",
     "slug": "karoline-cabeleireira",
+    "scheme": "karolinecabeleireira",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
