@@ -21,7 +21,7 @@ Na aba `Clientes`, o Gestor pode cadastrar, editar e excluir cadastros do salão
 2. Em `Authentication > Providers > Email`, ative o provedor Email e mantenha `Confirm email` ativado. O cadastro enviará um link de confirmação para o e-mail informado.
 3. No projeto, use URL e Publishable Key no `.env`.
 
-4. Em `Authentication > URL Configuration > Redirect URLs`, adicione `https://karoline-cabeleireira.vercel.app/` e `karolinecabeleireira://auth/callback` para o fluxo no celular. O app usa automaticamente a origem atual no navegador.
+4. Em `Authentication > URL Configuration`, defina `https://karoline-cabeleireira.vercel.app/` como `Site URL`. O cadastro usa o fluxo padrão do Supabase para enviar a confirmação e retorna para essa URL depois da confirmação.
 
 `.env`:
 
