@@ -31,7 +31,7 @@ const WHATSAPP = '5512992588955'
 const AUTH_REDIRECT_URL =
   Platform.OS === 'web' && typeof window !== 'undefined'
     ? window.location.origin
-    : 'karolinecabeleireira://auth/callback'
+    : undefined
 
 const COLORS = {
   bg: '#fff7fb',
@@ -905,18 +905,19 @@ function AuthScreen() {
         )
       }
 
-      const { data, error } =
-        await supabase.auth.signUp({
-          email: normalizedEmail,
-          password,
-          options: {
-            emailRedirectTo: AUTH_REDIRECT_URL,
-            data: {
-              full_name: name.trim(),
-              phone: supabasePhone,
-            },
+      const { data, error } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password,
+        options: {
+          ...(AUTH_REDIRECT_URL
+            ? { emailRedirectTo: AUTH_REDIRECT_URL }
+            : {}),
+          data: {
+            full_name: name.trim(),
+            phone: supabasePhone,
           },
-        })
+        },
+      })
 
       if (error) {
         throw error
