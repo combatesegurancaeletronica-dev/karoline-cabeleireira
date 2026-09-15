@@ -981,8 +981,9 @@ function AuthScreen() {
     >
       <StatusBar style="dark" />
 
-      <View style={styles.brandMark}>
-        <Text style={styles.brandLetter}>K</Text>
+      <View style={styles.brandRoseMark}>
+        <RoseDecoration size={76} />
+        <Text style={styles.brandRoseLetter}>K</Text>
       </View>
 
       <View style={styles.logoRow}>
@@ -5764,11 +5765,31 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  brandRoseMark: {
+    width: 86,
+    height: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    marginBottom: 2,
+  },
+
   brandLetter: {
     color: '#fff',
     fontSize: 40,
     fontWeight: '900',
     fontStyle: 'italic',
+  },
+
+  brandRoseLetter: {
+    position: 'absolute',
+    color: '#fff',
+    fontSize: 36,
+    fontWeight: '900',
+    fontStyle: 'italic',
+    textShadowColor: COLORS.primaryDark,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 
   logoRow: {
