@@ -1218,12 +1218,6 @@ function SalonTools({ compact = false }: { compact?: boolean }) {
           ))}
         </View>
       </View>
-      {!compact ? (
-        <>
-          <View style={styles.salonToolLine} />
-          <Text style={styles.salonToolCaption}>beleza & cuidado</Text>
-        </>
-      ) : null}
     </View>
   )
 }
@@ -5816,7 +5810,7 @@ const styles = StyleSheet.create({
   },
 
   salonToolsCompact: {
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     marginTop: 3,
   },
 
