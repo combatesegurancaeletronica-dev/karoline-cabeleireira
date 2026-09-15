@@ -982,7 +982,7 @@ function AuthScreen() {
       <StatusBar style="dark" />
 
       <View style={styles.brandRoseMark}>
-        <RoseDecoration size={76} />
+        <RoseDecoration size={76} large />
         <Text style={styles.brandRoseLetter}>K</Text>
       </View>
 
@@ -1146,8 +1146,10 @@ function AuthScreen() {
 
 function RoseDecoration({
   size = 46,
+  large = false,
 }: {
   size?: number
+  large?: boolean
 }) {
   const petalWidth = Math.max(10, size * 0.34)
   const petalHeight = Math.max(14, size * 0.22)
@@ -1158,6 +1160,11 @@ function RoseDecoration({
     { top: size * 0.64, left: size * 0.34, rotate: '180deg' },
     { top: size * 0.46, left: size * 0.10, rotate: '245deg' },
     { top: size * 0.14, left: size * 0.10, rotate: '305deg' },
+  ]
+  const innerPetals = [
+    { top: size * 0.28, left: size * 0.35, rotate: '35deg' },
+    { top: size * 0.39, left: size * 0.43, rotate: '125deg' },
+    { top: size * 0.29, left: size * 0.49, rotate: '215deg' },
   ]
 
   return (
@@ -1179,6 +1186,23 @@ function RoseDecoration({
               width: petalWidth,
               height: petalHeight,
               borderRadius: petalHeight,
+              top: petal.top,
+              left: petal.left,
+              transform: [{ rotate: petal.rotate }],
+            },
+          ]}
+        />
+      ))}
+
+      {large && innerPetals.map((petal, index) => (
+        <View
+          key={`inner-${index}`}
+          style={[
+            styles.roseInnerPetal,
+            {
+              width: size * 0.28,
+              height: size * 0.16,
+              borderRadius: size,
               top: petal.top,
               left: petal.left,
               transform: [{ rotate: petal.rotate }],
@@ -5782,7 +5806,7 @@ const styles = StyleSheet.create({
 
   brandRoseLetter: {
     position: 'absolute',
-    color: '#fff',
+    color: COLORS.primaryDark,
     fontSize: 36,
     fontWeight: '900',
     fontStyle: 'italic',
@@ -5973,6 +5997,18 @@ const styles = StyleSheet.create({
       height: 1,
     },
     elevation: 2,
+  },
+
+  roseInnerPetal: {
+    position: 'absolute',
+    backgroundColor: '#f5a2c9',
+    borderWidth: 1,
+    borderColor: '#d85a96',
+    shadowColor: '#a92f6c',
+    shadowOpacity: 0.14,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
 
   roseLeaf: {
