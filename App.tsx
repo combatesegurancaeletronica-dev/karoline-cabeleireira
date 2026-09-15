@@ -845,10 +845,12 @@ function AuthScreen() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [confirmationMessage, setConfirmationMessage] = useState('')
 
   async function submit() {
     setBusy(true)
     setErrorMessage('')
+    setConfirmationMessage('')
 
     try {
       const normalized = normalizePhone(phone)
@@ -916,11 +918,15 @@ function AuthScreen() {
       }
 
       if (!data.session) {
+        setConfirmationMessage(
+          'Cadastro realizado. Enviamos um link de confirmação para seu e-mail. Confirme antes de fazer login. Se não encontrar a mensagem, verifique a caixa de spam ou lixo eletrônico.'
+        )
         Alert.alert(
           'Confirme seu e-mail',
           'Enviamos um link de confirmação para o e-mail informado. Confirme-o antes de entrar.'
         )
       } else {
+        setConfirmationMessage('Cadastro realizado com sucesso.')
         Alert.alert(
           'Cadastro realizado',
           'Sua conta foi criada.'
@@ -1006,6 +1012,17 @@ function AuthScreen() {
 
         {errorMessage ? (
           <Text style={styles.authError}>{errorMessage}</Text>
+        ) : null}
+
+        {confirmationMessage ? (
+          <View style={styles.confirmationBanner}>
+            <Text style={styles.confirmationBannerTitle}>
+              Confirmação de e-mail necessária
+            </Text>
+            <Text style={styles.confirmationBannerText}>
+              {confirmationMessage}
+            </Text>
+          </View>
         ) : null}
 
         {mode === 'signup' && (
@@ -5874,6 +5891,26 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 8,
+    lineHeight: 19,
+  },
+
+  confirmationBanner: {
+    backgroundColor: COLORS.soft,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 8,
+  },
+
+  confirmationBannerTitle: {
+    color: COLORS.primaryDark,
+    fontWeight: '900',
+    marginBottom: 4,
+  },
+
+  confirmationBannerText: {
+    color: COLORS.text,
     lineHeight: 19,
   },
 
