@@ -1296,7 +1296,7 @@ function BottomNav({
     clients: 'Clientes',
     professionals: 'Profissionais',
     services: 'Serviços',
-    vouchers: 'Vouchers',
+    vouchers: 'Voucher',
     news: 'Novidades',
     cash: 'Caixa',
     loyalty: 'Fidelidade',
@@ -1629,7 +1629,7 @@ function ManagerHome({
           ['clients', 'Clientes'],
           ['professionals', 'Profissionais'],
           ['services', 'Serviços'],
-          ['vouchers', 'Vouchers'],
+          ['vouchers', 'Voucher'],
           ['news', 'Novidades'],
           ['cash', 'Caixa'],
           ['loyalty', 'Fidelidade'],
@@ -3955,7 +3955,7 @@ function ManagerVouchersCloud() {
   return (
     <>
       <SectionTitle subtitle="Gerencie os vouchers disponíveis para os clientes.">
-        Vouchers
+        Voucher
       </SectionTitle>
 
       <Card>
