@@ -999,13 +999,7 @@ function AuthScreen() {
         Cabeleireira
       </Text>
 
-      <View style={styles.salonTools}>
-        <Text style={styles.salonTool}>✂</Text>
-        <View style={styles.salonToolLine} />
-        <Text style={styles.salonTool}>🪮</Text>
-        <View style={styles.salonToolLine} />
-        <Text style={styles.salonToolCaption}>beleza & cuidado</Text>
-      </View>
+      <SalonTools />
 
       <Text style={styles.subtitle}>
         Beleza, cuidado e agendamento na palma da mão
@@ -1211,6 +1205,29 @@ function RoseDecoration({
   )
 }
 
+function SalonTools({ compact = false }: { compact?: boolean }) {
+  return (
+    <View style={[styles.salonTools, compact && styles.salonToolsCompact]}>
+      <Text style={[styles.salonScissors, compact && styles.salonScissorsCompact]}>✂</Text>
+      <View style={styles.salonToolLine} />
+      <View style={[styles.comb, compact && styles.combCompact]}>
+        <View style={styles.combHandle} />
+        <View style={styles.combTeeth}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <View key={index} style={styles.combTooth} />
+          ))}
+        </View>
+      </View>
+      {!compact ? (
+        <>
+          <View style={styles.salonToolLine} />
+          <Text style={styles.salonToolCaption}>beleza & cuidado</Text>
+        </>
+      ) : null}
+    </View>
+  )
+}
+
 function Header({
   title,
   subtitle,
@@ -1240,6 +1257,8 @@ function Header({
             {subtitle ||
               'Beleza e cuidado na palma da mão'}
           </Text>
+
+          <SalonTools compact />
         </View>
       </View>
 
@@ -1285,6 +1304,20 @@ function BottomNav({
     schedule: 'Agenda',
   }
 
+  const icons: Record<Tab, string> = {
+    home: '⌂',
+    requests: '▣',
+    clients: '♧',
+    professionals: '✦',
+    services: '✂',
+    vouchers: '%',
+    news: '▤',
+    cash: '$',
+    loyalty: '♡',
+    request: '＋',
+    schedule: '□',
+  }
+
   return (
     <View style={styles.bottomNav}>
       <ScrollView
@@ -1309,6 +1342,15 @@ function BottomNav({
                   : styles.bottomText
               }
             >
+              <Text
+                style={
+                  active === tab
+                    ? styles.bottomIconActive
+                    : styles.bottomIcon
+                }
+              >
+                {icons[tab]}
+              </Text>
               {labels[tab]}
             </Text>
           </Pressable>
@@ -5773,9 +5815,20 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 
-  salonTool: {
+  salonToolsCompact: {
+    justifyContent: 'flex-start',
+    marginTop: 3,
+  },
+
+  salonScissors: {
     color: COLORS.primaryDark,
-    fontSize: 19,
+    fontSize: 21,
+    lineHeight: 22,
+  },
+
+  salonScissorsCompact: {
+    fontSize: 20,
+    lineHeight: 21,
   },
 
   salonToolLine: {
@@ -5791,6 +5844,42 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginLeft: 8,
     letterSpacing: 0.5,
+  },
+
+  comb: {
+    width: 29,
+    height: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  combCompact: {
+    width: 29,
+    height: 18,
+  },
+
+  combHandle: {
+    width: 8,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: COLORS.primaryDark,
+    transform: [{ rotate: '35deg' }],
+  },
+
+  combTeeth: {
+    height: 12,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderTopWidth: 2,
+    borderColor: COLORS.primaryDark,
+  },
+
+  combTooth: {
+    width: 2,
+    height: 8,
+    backgroundColor: COLORS.primaryDark,
+    marginHorizontal: 1,
   },
 
   roseWrap: {
@@ -6173,6 +6262,21 @@ const styles = StyleSheet.create({
   bottomTextActive: {
     color: COLORS.primaryDark,
     fontWeight: '900',
+  },
+
+  bottomIcon: {
+    color: COLORS.muted,
+    fontSize: 17,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+
+  bottomIconActive: {
+    color: COLORS.primaryDark,
+    fontSize: 19,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 2,
   },
 
   modalBackdrop: {
