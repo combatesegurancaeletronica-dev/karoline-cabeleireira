@@ -999,6 +999,14 @@ function AuthScreen() {
         Cabeleireira
       </Text>
 
+      <View style={styles.salonTools}>
+        <Text style={styles.salonTool}>✂</Text>
+        <View style={styles.salonToolLine} />
+        <Text style={styles.salonTool}>🪮</Text>
+        <View style={styles.salonToolLine} />
+        <Text style={styles.salonToolCaption}>beleza & cuidado</Text>
+      </View>
+
       <Text style={styles.subtitle}>
         Beleza, cuidado e agendamento na palma da mão
       </Text>
@@ -1146,7 +1154,16 @@ function RoseDecoration({
 }: {
   size?: number
 }) {
-  const petal = Math.max(8, size * 0.28)
+  const petalWidth = Math.max(10, size * 0.34)
+  const petalHeight = Math.max(14, size * 0.22)
+  const petals = [
+    { top: size * 0.03, left: size * 0.34, rotate: '0deg' },
+    { top: size * 0.14, left: size * 0.58, rotate: '55deg' },
+    { top: size * 0.46, left: size * 0.58, rotate: '115deg' },
+    { top: size * 0.64, left: size * 0.34, rotate: '180deg' },
+    { top: size * 0.46, left: size * 0.10, rotate: '245deg' },
+    { top: size * 0.14, left: size * 0.10, rotate: '305deg' },
+  ]
 
   return (
     <View
@@ -1158,80 +1175,35 @@ function RoseDecoration({
         },
       ]}
     >
-      <View
-        style={[
-          styles.rosePetal,
-          {
-            width: petal,
-            height: petal,
-            borderRadius: petal / 2,
-            top: size * 0.08,
-            left: size * 0.36,
-          },
-        ]}
-      />
+      {petals.map((petal, index) => (
+        <View
+          key={index}
+          style={[
+            styles.rosePetal,
+            {
+              width: petalWidth,
+              height: petalHeight,
+              borderRadius: petalHeight,
+              top: petal.top,
+              left: petal.left,
+              transform: [{ rotate: petal.rotate }],
+            },
+          ]}
+        />
+      ))}
 
-      <View
-        style={[
-          styles.rosePetal,
-          {
-            width: petal,
-            height: petal,
-            borderRadius: petal / 2,
-            top: size * 0.28,
-            left: size * 0.60,
-          },
-        ]}
-      />
-
-      <View
-        style={[
-          styles.rosePetal,
-          {
-            width: petal,
-            height: petal,
-            borderRadius: petal / 2,
-            top: size * 0.58,
-            left: size * 0.45,
-          },
-        ]}
-      />
-
-      <View
-        style={[
-          styles.rosePetal,
-          {
-            width: petal,
-            height: petal,
-            borderRadius: petal / 2,
-            top: size * 0.56,
-            left: size * 0.17,
-          },
-        ]}
-      />
-
-      <View
-        style={[
-          styles.rosePetal,
-          {
-            width: petal,
-            height: petal,
-            borderRadius: petal / 2,
-            top: size * 0.28,
-            left: size * 0.04,
-          },
-        ]}
-      />
+      <View style={[styles.roseLeaf, { width: size * 0.28, height: size * 0.14, left: size * 0.02, bottom: size * 0.04, transform: [{ rotate: '-28deg' }] }]} />
+      <View style={[styles.roseLeaf, { width: size * 0.28, height: size * 0.14, right: size * 0.02, bottom: size * 0.04, transform: [{ rotate: '28deg' }] }]} />
 
       <View
         style={[
           styles.roseCenter,
           {
-            width: petal * 0.92,
-            height: petal * 0.92,
-            borderRadius: petal / 2,
-            top: size * 0.34,
-            left: size * 0.38,
+            width: size * 0.28,
+            height: size * 0.28,
+            borderRadius: size,
+            top: size * 0.36,
+            left: size * 0.36,
           },
         ]}
       />
@@ -5793,6 +5765,34 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 
+  salonTools: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 2,
+  },
+
+  salonTool: {
+    color: COLORS.primaryDark,
+    fontSize: 19,
+  },
+
+  salonToolLine: {
+    width: 22,
+    height: 1,
+    backgroundColor: COLORS.border,
+    marginHorizontal: 8,
+  },
+
+  salonToolCaption: {
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: '700',
+    marginLeft: 8,
+    letterSpacing: 0.5,
+  },
+
   roseWrap: {
     position: 'relative',
     justifyContent: 'center',
@@ -5812,6 +5812,14 @@ const styles = StyleSheet.create({
       height: 1,
     },
     elevation: 2,
+  },
+
+  roseLeaf: {
+    position: 'absolute',
+    backgroundColor: '#8fb58c',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#6f9a70',
   },
 
   roseCenter: {
