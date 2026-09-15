@@ -1211,14 +1211,13 @@ function SalonTools({ compact = false }: { compact?: boolean }) {
     <View style={[styles.salonTools, compact && styles.salonToolsCompact]}>
       <Text style={[styles.salonScissors, compact && styles.salonScissorsCompact]}>✂</Text>
       <View style={styles.salonToolLine} />
-      <View style={[styles.comb, compact && styles.combCompact]}>
-        <View style={styles.combHandle} />
-        <View style={styles.combTeeth}>
-          {Array.from({ length: 6 }).map((_, index) => (
-            <View key={index} style={styles.combTooth} />
-          ))}
+        <View style={[styles.hairDryer, compact && styles.hairDryerCompact]}>
+          <View style={styles.hairDryerBody}>
+            <View style={styles.hairDryerVent} />
+          </View>
+          <View style={styles.hairDryerHandle} />
+          <View style={styles.hairDryerNozzle} />
         </View>
-      </View>
     </View>
   )
 }
@@ -5895,6 +5894,64 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: COLORS.primaryDark,
     marginHorizontal: 1,
+  },
+
+  hairDryer: {
+    width: 31,
+    height: 22,
+    position: 'relative',
+    transform: [{ rotate: '-12deg' }],
+  },
+
+  hairDryerCompact: {
+    width: 31,
+    height: 22,
+  },
+
+  hairDryerBody: {
+    position: 'absolute',
+    left: 5,
+    top: 1,
+    width: 18,
+    height: 14,
+    borderRadius: 8,
+    backgroundColor: COLORS.primaryDark,
+    borderWidth: 1,
+    borderColor: COLORS.primaryDark,
+  },
+
+  hairDryerVent: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    width: 7,
+    height: 6,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.soft,
+  },
+
+  hairDryerHandle: {
+    position: 'absolute',
+    left: 12,
+    top: 12,
+    width: 7,
+    height: 12,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+    backgroundColor: COLORS.primaryDark,
+    transform: [{ rotate: '-12deg' }],
+  },
+
+  hairDryerNozzle: {
+    position: 'absolute',
+    right: 0,
+    top: 5,
+    width: 10,
+    height: 6,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
+    backgroundColor: COLORS.primary,
   },
 
   roseWrap: {
