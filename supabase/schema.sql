@@ -225,6 +225,78 @@ alter table public.cash_entries
 alter table public.cash_entries
     add column if not exists request_id uuid;
 
+update public.cash_entries ce
+set client_id = null
+where client_id is not null
+  and not exists (
+      select 1
+      from public.clients c
+      where c.id = ce.client_id
+  );
+
+update public.cash_entries ce
+set service_id = null
+where service_id is not null
+  and not exists (
+      select 1
+      from public.services s
+      where s.id = ce.service_id
+  );
+
+update public.cash_entries ce
+set request_id = null
+where request_id is not null
+  and not exists (
+      select 1
+      from public.service_requests sr
+      where sr.id = ce.request_id
+  );
+
+alter table public.cash_entries
+    drop constraint if exists cash_entries_client_id_fkey;
+
+alter table public.cash_entries
+    drop constraint if exists cash_entries_service_id_fkey;
+
+alter table public.cash_entries
+    drop constraint if exists cash_entries_request_id_fkey;
+
+do $$
+begin
+    alter table public.cash_entries
+        add constraint cash_entries_client_id_fkey
+        foreign key (client_id)
+        references public.clients(id)
+        on delete cascade;
+exception
+    when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+    alter table public.cash_entries
+        add constraint cash_entries_service_id_fkey
+        foreign key (service_id)
+        references public.services(id)
+        on delete set null;
+exception
+    when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+    alter table public.cash_entries
+        add constraint cash_entries_request_id_fkey
+        foreign key (request_id)
+        references public.service_requests(id)
+        on delete cascade;
+exception
+    when duplicate_object then null;
+end
+$$;
+
 create index if not exists idx_cash_entries_client
     on public.cash_entries(client_id);
 

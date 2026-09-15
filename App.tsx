@@ -919,7 +919,7 @@ function AuthScreen() {
 
       if (!data.session) {
         setConfirmationMessage(
-          'Cadastro realizado. Enviamos um link de confirmação para seu e-mail. Confirme antes de fazer login. Se não encontrar a mensagem, verifique a caixa de spam ou lixo eletrônico.'
+          'Cadastro realizado. Enviamos um link de confirmação para seu e-mail. Procure a mensagem pelo remetente do Supabase, confirme antes de fazer login e verifique também a caixa de spam, lixo eletrônico e todas as pastas da sua conta.'
         )
         Alert.alert(
           'Confirme seu e-mail',
